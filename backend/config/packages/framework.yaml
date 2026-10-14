@@ -3,7 +3,17 @@ framework:
     secret: '%env(APP_SECRET)%'
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # Sessions (back-office EasyAdmin) stockées dans Redis : le conteneur est en
+    # lecture seule et peut être recréé sans déconnecter le staff.
+    session:
+        handler_id: '%env(REDIS_URL)%'
+        cookie_secure: auto
+        cookie_samesite: lax
+
+    # Derrière Nginx : faire confiance aux en-têtes X-Forwarded-* du reverse proxy
+    # (IP réelle du client pour les rate-limiters, schéma HTTPS pour les URLs).
+    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port']
 
     serializer:
         enabled: true
@@ -52,4 +62,5 @@ when@test:
     framework:
         test: true
         session:
+            handler_id: null
             storage_factory_id: session.storage.factory.mock_file

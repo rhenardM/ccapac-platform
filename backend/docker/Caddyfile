@@ -1,0 +1,21 @@
+# Serveur HTTP interne de FrankenPHP. Le TLS, les en-têtes de sécurité publics
+# et le rate-limiting sont gérés par Nginx en amont : ici, HTTP simple sur :8080.
+{
+	auto_https off
+	admin off
+	frankenphp
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+:8080 {
+	root * /app/public
+	encode zstd gzip
+
+	request_body {
+		max_size 22MB
+	}
+
+	php_server
+}

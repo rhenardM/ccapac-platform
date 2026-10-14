@@ -1,0 +1,45 @@
+# Développement local — chargé automatiquement par `docker compose up`.
+# Domaines : https://localhost, https://api.localhost, https://app-api.localhost
+# (certificat auto-signé). E-mails capturés par Mailpit : http://localhost:8025
+
+services:
+  backend:
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      MAILER_DSN: smtp://mailpit:1025
+  worker:
+    environment:
+      APP_ENV: dev
+      MAILER_DSN: smtp://mailpit:1025
+  scheduler:
+    environment:
+      APP_ENV: dev
+  frontend:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_SECURE: "false"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0" # certificat auto-signé en local uniquement
+  node-api:
+    environment:
+      NODE_ENV: development
+
+  # Accès aux bases depuis le poste (127.0.0.1 uniquement, jamais en prod).
+  postgres:
+    ports: ["127.0.0.1:${DEV_POSTGRES_PORT:-15432}:5432"]
+  redis:
+    ports: ["127.0.0.1:${DEV_REDIS_PORT:-16379}:6379"]
+  node-db:
+    ports: ["127.0.0.1:${DEV_MYSQL_PORT:-13306}:3306"]
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports: ["127.0.0.1:${DEV_MAILPIT_PORT:-8025}:8025"]
+    networks: [backend]
+
+  # Pas de certbot ni de sauvegarde en local.
+  certbot:
+    profiles: [disabled]
+  backup:
+    profiles: [disabled]

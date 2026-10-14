@@ -1,0 +1,75 @@
+name: _deploy (réutilisable)
+
+# Déploie une version sur un environnement GitHub (staging | production).
+# Secrets de l'environnement :
+#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS
+#   DOTENV              → contenu complet du .env (voir .env.example)
+#   MAKUTA_PRIVATE_KEY  → clé privée RSA Makuta (PEM)
+#   RCLONE_CONF         → configuration rclone des sauvegardes hors serveur
+# Variables de l'environnement : DEPLOY_PATH (ex. /opt/ccapac/production), SITE_DOMAIN
+
+on:
+  workflow_call:
+    inputs:
+      environment: { type: string, required: true }
+      registry: { type: string, required: true }
+      tag: { type: string, required: true }
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://${{ vars.SITE_DOMAIN }}
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clé SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          echo "SSH=ssh -i $HOME/.ssh/id_deploy ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" >> "$GITHUB_ENV"
+
+      - name: Préparation de la configuration
+        env:
+          DOTENV: ${{ secrets.DOTENV }}
+          MAKUTA_PRIVATE_KEY: ${{ secrets.MAKUTA_PRIVATE_KEY }}
+          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+        run: |
+          mkdir -p bundle/infra/secrets
+          cp docker-compose.yml docker-compose.prod.yml bundle/
+          cp -r infra/nginx infra/postgres infra/backup infra/scripts bundle/infra/
+          {
+            printf '%s\n' "$DOTENV"
+            echo "COMPOSE_PROJECT_NAME=ccapac-${{ inputs.environment }}"
+            echo "REGISTRY=${{ inputs.registry }}"
+            echo "IMAGE_TAG=${{ inputs.tag }}"
+            echo "FRONTEND_IMAGE_TAG=${{ inputs.tag }}-${{ inputs.environment }}"
+          } > bundle/.env.next
+          printf '%s\n' "$MAKUTA_PRIVATE_KEY" > bundle/infra/secrets/makuta_private.pem
+          printf '%s\n' "$RCLONE_CONF" > bundle/infra/secrets/rclone.conf
+
+      - name: Envoi sur le serveur
+        run: |
+          $SSH "mkdir -p '$DEPLOY_PATH'"
+          rsync -az --delete-after \
+            --exclude '.env' --exclude '.env.previous' --exclude '.env.failed' \
+            -e "ssh -i $HOME/.ssh/id_deploy" bundle/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_PATH/"
+
+      - name: Déploiement (rollback automatique en cas d'échec)
+        run: |
+          $SSH "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin \
+            && bash '$DEPLOY_PATH/infra/scripts/deploy.sh'; status=\$?; docker logout ghcr.io >/dev/null; exit \$status"
+
+      - name: Health check public
+        run: |
+          for url in "https://${{ vars.SITE_DOMAIN }}/api/health"; do
+            curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "$url"
+          done

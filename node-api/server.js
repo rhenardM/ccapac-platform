@@ -15,7 +15,14 @@ const {
 
 const app = express();
 
-app.use(morgan("dev"));
+// Derrière Nginx : IP réelle du client et cookies `secure` corrects.
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 1));
+
+app.use(
+  morgan(
+    process.env.NODE_ENV === "production" ? "combined" : "dev"
+  )
+);
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -24,6 +31,9 @@ const allowedOrigins = [
   "https://www.centreculturel.cd",
   "https://site-public-reservation.vercel.app",
   process.env.FRONTEND_URL,
+  ...String(process.env.CORS_EXTRA_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim()),
 ]
   .filter(Boolean)
   .map((origin) =>
@@ -45,7 +55,10 @@ const corsOptions = {
     const isExplicitlyAllowed =
       allowedOrigins.includes(normalizedOrigin);
 
+    // Les previews Vercel (*.vercel.app) ne sont acceptées que si
+    // explicitement activées : sinon n'importe quel projet Vercel passerait.
     const isVercelOrigin =
+      process.env.CORS_ALLOW_VERCEL_PREVIEWS === "true" &&
       normalizedOrigin.startsWith("https://") &&
       normalizedOrigin.endsWith(".vercel.app");
 

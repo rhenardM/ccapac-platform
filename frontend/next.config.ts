@@ -13,6 +13,9 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  // Image Docker minimale : seul le serveur Node autonome + ses dépendances.
+  output: "standalone",
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "6mb",
