@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Import newsletter — Administration</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f4efe6; margin: 0; padding: 2rem; color: #2a2a2a; }
+        .wrap { max-width: 640px; margin: 0 auto; }
+        .card { background: #fff; border: 1px solid #e0d3bd; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+        h1 { color: #1f4f7a; font-size: 1.2rem; margin-top: 0; }
+        a.back { color: #1f4f7a; text-decoration: none; font-size: .9rem; }
+        input[type=file] { display: block; margin: 1rem 0; }
+        button { background: #1f4f7a; color: #fff; border: 0; border-radius: 8px; padding: .7rem 1.2rem; font-weight: 700; cursor: pointer; }
+        .flash { padding: .8rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .flash.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+        .flash.danger { background: #fdecec; border: 1px solid #f5c2c2; color: #b02a2a; }
+        code { background: #f4efe6; padding: .1rem .3rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a class="back" href="/admin">← Retour au tableau de bord</a>
+    <div class="card">
+        <h1>Importer des abonnés (CSV)</h1>
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash {{ type }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+        <p>Fichier CSV avec une colonne <code>email</code> (et optionnellement <code>nom</code>).
+           Séparateur <code>;</code> ou <code>,</code>. Les doublons sont mis à jour (idempotent).</p>
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="{{ csrf_token('newsletter_import') }}">
+            <input type="file" name="csv" accept=".csv,text/csv" required>
+            <button type="submit">Importer</button>
+        </form>
+        <p style="margin-top:1rem; font-size:.85rem; color:#777;">
+            Abonnés actuels : <strong>{{ count }}</strong> ·
+            <a href="{{ path('admin_newsletter_export') }}">Exporter en CSV</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

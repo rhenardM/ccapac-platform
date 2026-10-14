@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campagne newsletter — Administration</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f4efe6; margin: 0; padding: 2rem; color: #2a2a2a; }
+        .wrap { max-width: 720px; margin: 0 auto; }
+        .card { background: #fff; border: 1px solid #e0d3bd; border-radius: 12px; padding: 1.5rem; }
+        h1 { color: #1f4f7a; font-size: 1.2rem; margin-top: 0; }
+        a.back { color: #1f4f7a; text-decoration: none; font-size: .9rem; }
+        label { display: block; font-weight: 700; font-size: .8rem; text-transform: uppercase; color: #666; margin: 1rem 0 .35rem; }
+        input[type=text], textarea { width: 100%; box-sizing: border-box; padding: .7rem; border: 1px solid #e0d3bd; border-radius: 8px; font-size: .95rem; background: #fdfbf7; font-family: inherit; }
+        textarea { min-height: 220px; resize: vertical; }
+        button { margin-top: 1rem; background: #1f4f7a; color: #fff; border: 0; border-radius: 8px; padding: .8rem 1.4rem; font-weight: 700; cursor: pointer; }
+        .flash { padding: .8rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .flash.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+        .flash.danger { background: #fdecec; border: 1px solid #f5c2c2; color: #b02a2a; }
+        .hint { font-size: .85rem; color: #777; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a class="back" href="/admin">← Retour au tableau de bord</a>
+    <div class="card">
+        <h1>Envoyer une campagne newsletter</h1>
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash {{ type }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+        <p class="hint">Le message sera envoyé à <strong>{{ activeCount }}</strong> abonné(s) actif(s).
+           Le contenu accepte du HTML.</p>
+        <form method="post" onsubmit="return confirm('Envoyer la campagne à {{ activeCount }} abonné(s) ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('newsletter_campaign') }}">
+            <label for="subject">Sujet</label>
+            <input type="text" id="subject" name="subject" required maxlength="200">
+            <label for="body">Message (HTML)</label>
+            <textarea id="body" name="body" required placeholder="<h1>Bonjour…</h1><p>…</p>"></textarea>
+            <button type="submit">Envoyer la campagne</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

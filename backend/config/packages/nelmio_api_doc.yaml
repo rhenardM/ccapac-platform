@@ -1,0 +1,38 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: 'API Backend du Grand Tambour'
+            description: |
+                Backend de paiement de la collecte de dons (passerelle Makuta Cash).
+                Le frontend Next.js consomme ces endpoints ; il ne parle jamais directement à Makuta.
+                Devise : USD. Toutes les réponses sont enveloppées dans `{ "data": ... }` ou `{ "error": ... }`.
+
+                **API admin** (`/api/admin`) : réservée aux administrateurs, authentification par
+                jeton **Bearer** (`Authorization: Bearer <token>`), généré via `php bin/console app:admin:token`.
+                Cliquez sur « Authorize » pour renseigner le jeton.
+            version: '1.0.0'
+        servers:
+            - url: https://api-fundraising.centreculturel.cd
+              description: Production
+            - url: http://localhost:8000
+              description: Développement local
+        tags:
+            - { name: 'Dons', description: 'Création et suivi des dons' }
+            - { name: 'Collecte', description: 'Statistiques publiques de la collecte' }
+            - { name: 'Webhook', description: 'Callback Makuta (usage interne)' }
+            - { name: 'Admin', description: 'API d''administration (lecture) — jeton Bearer requis' }
+            - { name: 'Admin · Utilisateurs', description: 'Gestion des administrateurs — super-admin + jeton Bearer' }
+            - { name: 'Contenu', description: 'Contenu éditorial public : actualités, événements, média, newsletter' }
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: opaque
+                    description: 'Jeton d''API admin. En-tête : Authorization: Bearer <token>'
+    areas:
+        default:
+            path_patterns:
+                - ^/api/fundraising
+                - ^/api/admin
+                - ^/api/content

@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum ActivityType {
+  SIGNUP
+  LOGIN
+  PROFILE_UPDATE
+  EVENT_REGISTER
+  EVENT_CANCEL
+  ADMIN_ACTION
+  NEWSLETTER_DOWNLOAD
+  SUGGESTION_SUBMIT
+}
+
+enum SuggestionCategory {
+  PROGRAMMATION
+  ACCUEIL
+  ESPACES
+  COMMUNICATION
+  AUTRE
+}
+
+enum SuggestionStatus {
+  NEW
+  READ
+  RESOLVED
+}
+
+model User {
+  id              String              @id @default(cuid()) @map("_id")
+  name            String
+  email           String
+  emailVerified   Boolean             @default(false)
+  image           String?
+  role            Role                @default(MEMBER)
+  isApproved      Boolean             @default(false)
+  newsletterOptIn Boolean             @default(true)
+  phone           String?
+  address         String?
+  city            String?
+  country         String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @default(now()) @updatedAt
+  sessions        Session[]
+  accounts        Account[]
+  registrations   EventRegistration[]
+  activities      MemberActivity[]
+  suggestions     MemberSuggestion[]
+  approvalToken   ApprovalToken?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid()) @map("_id")
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid()) @map("_id")
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid()) @map("_id")
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+model ApprovalToken {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+
+  @@map("approval_token")
+}
+
+model EventRegistration {
+  id        String             @id @default(cuid()) @map("_id")
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String // ID de l'événement côté backend contenu (dérivé du slug)
+  status    RegistrationStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("event_registration")
+}
+
+model MemberActivity {
+  id        String       @id @default(cuid()) @map("_id")
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  @@index([userId, type])
+  @@map("member_activity")
+}
+
+model MemberSuggestion {
+  id         String             @id @default(cuid()) @map("_id")
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   SuggestionCategory
+  message    String
+  status     SuggestionStatus   @default(NEW)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  resolvedAt DateTime?
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([category, createdAt])
+  @@map("member_suggestion")
+}
+
+model FundraisingDonationNotification {
+  id                      String    @id @default(cuid()) @map("_id")
+  donationId              String    @unique
+  status                  String
+  amount                  Float
+  currency                String
+  paymentMethod           String
+  donorName               String
+  donorEmail              String
+  donorPhone              String?
+  notificationStatus      String    @default("pending")
+  notifiedAt              DateTime?
+  donorNotificationStatus String    @default("pending")
+  donorNotifiedAt         DateTime?
+  donorIsMember           Boolean?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([notificationStatus, createdAt])
+  @@index([donorNotificationStatus, createdAt])
+  @@map("fundraising_donation_notification")
+}

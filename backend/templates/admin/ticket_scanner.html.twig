@@ -1,0 +1,99 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Scanner un billet{% endblock %}
+
+{% block main %}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted">
+                        Pointez la caméra vers le QR Code imprimé ou affiché sur le billet d'un
+                        participant. Dès qu'un billet est reconnu, la page de contrôle d'accès
+                        s'ouvre automatiquement pour confirmer l'entrée.
+                    </p>
+
+                    <div id="scanner-status" class="alert alert-info" role="status">
+                        Démarrage de la caméra…
+                    </div>
+
+                    <div style="position: relative; max-width: 480px;">
+                        <video id="scanner-video" style="width: 100%; border-radius: 8px; background: #000;" playsinline muted></video>
+                    </div>
+                    <canvas id="scanner-canvas" style="display: none;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ asset('vendor/jsqr/jsQR.js') }}"></script>
+    <script>
+        (function () {
+            const video = document.getElementById('scanner-video');
+            const canvas = document.getElementById('scanner-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const statusEl = document.getElementById('scanner-status');
+            const validatePathPrefix = window.location.origin + '/api/cinematheque/tickets/';
+            let found = false;
+            let rafId = null;
+
+            function setStatus(message, type) {
+                statusEl.textContent = message;
+                statusEl.className = 'alert alert-' + (type || 'info');
+            }
+
+            function tick() {
+                if (found) {
+                    return;
+                }
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'dontInvert',
+                    });
+
+                    if (code && code.data) {
+                        if (code.data.indexOf(validatePathPrefix) === 0 && code.data.indexOf('/validate') !== -1) {
+                            found = true;
+                            setStatus('Billet reconnu — ouverture du contrôle d\'accès…', 'success');
+                            window.location.href = code.data;
+
+                            return;
+                        }
+
+                        setStatus('QR reconnu, mais ce n\'est pas un billet valide pour ce site.', 'warning');
+                    }
+                }
+                rafId = requestAnimationFrame(tick);
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', true);
+                    video.play();
+                    setStatus('Caméra active — présentez le QR Code du billet.', 'info');
+                    rafId = requestAnimationFrame(tick);
+                })
+                .catch(function () {
+                    setStatus(
+                        'Impossible d\'accéder à la caméra. Vérifiez les autorisations du navigateur (HTTPS requis).',
+                        'danger'
+                    );
+                });
+
+            window.addEventListener('beforeunload', function () {
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                }
+                const stream = video.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(function (track) { track.stop(); });
+                }
+            });
+        })();
+    </script>
+{% endblock %}

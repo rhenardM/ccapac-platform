@@ -1,0 +1,13 @@
+# Secrets et environnements locaux — jamais versionnés
+.env
+.env.*
+!.env.example
+!backend/.env
+!backend/.env.dev
+!backend/.env.test
+infra/secrets/*
+!infra/secrets/.gitkeep
+
+# OS / IDE
+.DS_Store
+.idea/

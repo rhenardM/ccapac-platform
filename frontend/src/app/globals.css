@@ -1,0 +1,165 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-poppins);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #f3f2e9; /* Beige clair pour le fond */
+  --foreground: #804423; /* Marron foncé pour le texte principal */
+  --card: #ffffff;
+  --card-foreground: #804423;
+  --popover: #ffffff;
+  --popover-foreground: #804423;
+  --primary: #cd935b; /* Couleur primaire CCAPAC - marron */
+  --primary-foreground: #f3f2e9;
+  --secondary: #804423; /* Couleur secondaire CCAPAC - jaune/or */
+  --secondary-foreground: #804423;
+  --muted: #e8e6dd;
+  --muted-foreground: #6b5b4f;
+  --accent: #ffcc02;
+  --accent-foreground: #804423;
+  --destructive: #dc2626;
+  --border: #ffffff;
+  --input: #d4d1c7;
+  --ring: #cd935b;
+  --chart-1: #cd935b;
+  --chart-2: #ffcc02;
+  --chart-3: #a0522d;
+  --chart-4: #ffd700;
+  --chart-5: #8b4513;
+  --sidebar: #f3f2e9;
+  --sidebar-foreground: #804423;
+  --sidebar-primary: #cd935b;
+  --sidebar-primary-foreground: #f3f2e9;
+  --sidebar-accent: #e8e6dd;
+  --sidebar-accent-foreground: #804423;
+  --sidebar-border: #d4d1c7;
+  --sidebar-ring: #cd935b;
+}
+
+.dark {
+  --background: #1a1410;
+  --foreground: #f3f2e9;
+  --card: #804423;
+  --card-foreground: #f3f2e9;
+  --popover: #804423;
+  --popover-foreground: #f3f2e9;
+  --primary: #ffcc02; /* Inversé en mode sombre */
+  --primary-foreground: #1a1410;
+  --secondary: #cd935b;
+  --secondary-foreground: #f3f2e9;
+  --muted: #3d2a1a;
+  --muted-foreground: #a08b7a;
+  --accent: #ffcc02;
+  --accent-foreground: #1a1410;
+  --destructive: #ef4444;
+  --border: #3d2a1a;
+  --input: #3d2a1a;
+  --ring: #ffcc02;
+  --chart-1: #ffcc02;
+  --chart-2: #cd935b;
+  --chart-3: #ffd700;
+  --chart-4: #a0522d;
+  --chart-5: #deb887;
+  --sidebar: #1a1410;
+  --sidebar-foreground: #f3f2e9;
+  --sidebar-primary: #ffcc02;
+  --sidebar-primary-foreground: #1a1410;
+  --sidebar-accent: #3d2a1a;
+  --sidebar-accent-foreground: #f3f2e9;
+  --sidebar-border: #3d2a1a;
+  --sidebar-ring: #ffcc02;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Battement de cœur — utilisé par le bouton « Faire un don » pour attirer l'œil. */
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  18% {
+    transform: scale(1.32);
+  }
+  34% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+  66% {
+    transform: scale(1);
+  }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 3s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-heartbeat {
+    animation: none;
+  }
+}
+
+/* Rangées défilant horizontalement (carrousels d'événements) : on masque la
+   barre de défilement, la navigation se faisant par les flèches ou au doigt. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

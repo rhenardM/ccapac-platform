@@ -1,0 +1,39 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Réglages page Espaces du Grand Tambour{% endblock %}
+
+{% block main %}
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {% for field in ['heroKicker', 'heroTitle', 'introText'] %}
+                            <div class="mb-3">
+                                {{ form_label(form[field], null, {label_attr: {class: 'form-label fw-bold'}}) }}
+                                {{ form_widget(form[field], {attr: {class: 'form-control'}}) }}
+                                {{ form_errors(form[field]) }}
+                            </div>
+                        {% endfor %}
+
+                        <div class="mb-3">
+                            {{ form_label(form.heroBackgroundImageFile, null, {label_attr: {class: 'form-label fw-bold'}}) }}
+                            {% if settings.heroBackgroundImage %}
+                                <div class="mb-2">
+                                    <img src="/uploads/media/{{ settings.heroBackgroundImage }}" alt="Image de fond actuelle" style="max-width: 260px; border-radius: 8px;">
+                                </div>
+                            {% endif %}
+                            {{ form_widget(form.heroBackgroundImageFile, {attr: {class: 'form-control'}}) }}
+                            {% if form.heroBackgroundImageFile.vars.help %}
+                                <div class="form-text">{{ form.heroBackgroundImageFile.vars.help }}</div>
+                            {% endif %}
+                            {{ form_errors(form.heroBackgroundImageFile) }}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

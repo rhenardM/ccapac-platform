@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votre billet — {{ ticket.ticketNumber }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            color: #333333;
+        }
+        .wrapper {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .header {
+            background-color: #CD935B;
+            padding: 32px 40px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .header p {
+            margin: 6px 0 0;
+            color: #fbeee2;
+            font-size: 13px;
+        }
+        .header-logo {
+            display: block;
+            max-width: 210px;
+            width: 55%;
+            height: auto;
+            margin: 0 auto 14px;
+        }
+        .body {
+            padding: 36px 40px;
+        }
+        .salutation {
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .intro {
+            color: #555555;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+        .receipt-box {
+            background-color: #fdfbf6;
+            border-left: 4px solid #CD935B;
+            border: 1px solid #eadcc7;
+            border-radius: 4px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+        }
+        .receipt-box h2 {
+            margin: 0 0 16px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #804423;
+        }
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .receipt-table td {
+            padding: 6px 0;
+            font-size: 14px;
+        }
+        .receipt-table td:first-child {
+            color: #777777;
+            width: 45%;
+        }
+        .receipt-table td:last-child {
+            font-weight: bold;
+            color: #804423;
+        }
+        .ticket-number {
+            font-size: 20px;
+            letter-spacing: 1px;
+            color: #804423;
+        }
+        .cta {
+            text-align: center;
+            margin: 28px 0;
+        }
+        .cta a {
+            display: inline-block;
+            background-color: #CD935B;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 12px 28px;
+            border-radius: 6px;
+        }
+        .note {
+            background-color: #fffbf0;
+            border: 1px solid #f0d060;
+            border-radius: 4px;
+            padding: 16px 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #555555;
+            margin-bottom: 12px;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            border-top: 1px solid #eeeeee;
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <div class="header">
+        {% if hasLogo %}<img src="cid:logo" class="header-logo" alt="CCAPAC">{% endif %}
+        <h1>Votre billet est prêt</h1>
+        <p>Cinémathèque — Ciné-Dimanche</p>
+    </div>
+
+    <div class="body">
+
+        <p class="salutation">Bonjour <strong>{{ registration.fullName }}</strong>,</p>
+
+        <p class="intro">
+            Votre inscription à la séance <strong>{{ ticket.screening.film.title ?? 'Séance' }}</strong>
+            est confirmée. Votre billet numérique est joint à ce message au format PDF.
+        </p>
+
+        <div class="receipt-box">
+            <h2>Votre billet</h2>
+            <table class="receipt-table">
+                <tr>
+                    <td>Numéro</td>
+                    <td class="ticket-number">{{ ticket.ticketNumber }}</td>
+                </tr>
+                <tr>
+                    <td>Date</td>
+                    <td>{{ ticket.screening.scheduledDate ? ticket.screening.scheduledDate|date('d/m/Y') : '—' }}</td>
+                </tr>
+                <tr>
+                    <td>Heure</td>
+                    <td>{{ ticket.screening.startTime ? ticket.screening.startTime|date('H:i') : '—' }}</td>
+                </tr>
+                <tr>
+                    <td>Lieu</td>
+                    <td>{{ ticket.screening.venue ?? '—' }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="cta">
+            <a href="{{ viewUrl }}">Voir mon billet en ligne</a>
+        </div>
+
+        <div class="note">
+            Présentez ce billet (imprimé ou sur votre smartphone) à l'entrée de la séance.
+            Il est strictement personnel et non transférable.
+        </div>
+
+        <p style="margin-top: 28px; color: #333333;">
+            À bientôt,<br>
+            <strong>L'équipe du Grand Tambour</strong>
+        </p>
+
+    </div>
+
+    <div class="footer">
+        <p>
+            Biblio-Librairie du Grand Tambour · Centre Culturel · Kinshasa, RDC<br>
+            <a href="mailto:munongo.bonkey@centreculturel.cd" style="color:#804423;">munongo.bonkey@centreculturel.cd</a>
+        </p>
+        <p style="margin-top: 8px; font-size: 11px;">
+            Ce message a été envoyé automatiquement suite à votre inscription (billet {{ ticket.ticketNumber }}).
+        </p>
+    </div>
+
+</div>
+</body>
+</html>
