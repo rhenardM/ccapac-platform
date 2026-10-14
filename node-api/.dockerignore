@@ -1,0 +1,9 @@
+.git
+node_modules
+uploads
+.env*
+test-*.js
+*.seed.json
+programme-team.json
+Dockerfile
+.dockerignore

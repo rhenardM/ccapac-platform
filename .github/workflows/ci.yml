@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, "architecture/**"]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend Symfony
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: ccapac_api_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: test
+      # En test, Doctrine ajoute le suffixe _test au nom de base.
+      DATABASE_URL: postgresql://app:app@127.0.0.1:5432/ccapac_api?serverVersion=16&charset=utf8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, redis, intl, gd, zip
+          coverage: none
+          tools: composer:v2
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: php bin/console lint:yaml config
+      - run: php bin/console lint:container
+      - name: Migrations PostgreSQL + cohérence du schéma
+        run: |
+          php bin/console doctrine:migrations:migrate --no-interaction
+          php bin/console doctrine:schema:validate
+      - run: php bin/phpunit
+      - name: Vulnérabilités Composer
+        run: composer audit --locked
+
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend Next.js
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run lint
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - run: npm run build
+      - name: Vulnérabilités npm (critiques bloquantes)
+        run: npm audit --omit=dev --audit-level=critical
+
+  # ---------------------------------------------------------------------------
+  node-api:
+    name: Node API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: node-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: node-api/package-lock.json
+      - run: npm ci --omit=dev --no-audit --no-fund
+      - name: Vérification syntaxique
+        run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
+      - name: Vulnérabilités npm (critiques bloquantes)
+        run: npm audit --omit=dev --audit-level=critical
+
+  # ---------------------------------------------------------------------------
+  infra:
+    name: Infra (compose + images)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validation docker compose (dev + prod)
+        run: |
+          cp .env.example .env
+          touch infra/secrets/makuta_private.pem infra/secrets/rclone.conf
+          docker compose config -q
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
+      - name: Build des images (hors frontend, construit dans deploy)
+        run: docker compose build backend node-api nginx backup
+      - name: Test de la configuration Nginx
+        run: |
+          docker run --rm \
+            -e SITE_DOMAIN=example.test -e API_DOMAIN=api.example.test -e NODE_API_DOMAIN=app-api.example.test \
+            --add-host frontend:127.0.0.1 --add-host backend:127.0.0.1 --add-host node-api:127.0.0.1 \
+            ccapac/nginx:local nginx -t
+
+  # ---------------------------------------------------------------------------
+  security:
+    name: Contrôles de sécurité
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secrets dans le code (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Vulnérabilités des dépendances (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          skip-dirs: frontend/node_modules,node-api/node_modules,backend/vendor

@@ -1,0 +1,368 @@
+# =============================================================================
+# CCAPAC Platform — orchestration commune (staging / production / dev)
+#
+#   Internet ──443──► nginx ──(réseau frontend)──► frontend | backend | node-api
+#                                                     │
+#                                    (réseau backend, interne, sans Internet)
+#                                                     ▼
+#                               postgres | redis | node-db | volumes
+#
+# Seul nginx publie des ports (80/443). Aucun port applicatif, PostgreSQL,
+# MySQL ou Redis n'est exposé sur l'hôte.
+#
+# Production / staging :
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Développement local (docker-compose.override.yml chargé automatiquement) :
+#   docker compose up -d --build
+# =============================================================================
+
+name: ${COMPOSE_PROJECT_NAME:-ccapac}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-hardening: &hardening
+  restart: unless-stopped
+  logging: *logging
+  security_opt:
+    - no-new-privileges:true
+
+x-app-hardening: &app-hardening
+  <<: *hardening
+  read_only: true
+  cap_drop: [ALL]
+
+x-backend-env: &backend-env
+  APP_ENV: prod
+  APP_DEBUG: "0"
+  APP_SECRET: ${BACKEND_APP_SECRET:?}
+  DATABASE_URL: postgresql://ccapac_api:${POSTGRES_API_PASSWORD:?}@postgres:5432/ccapac_api?serverVersion=16&charset=utf8
+  REDIS_URL: redis://default:${REDIS_PASSWORD:?}@redis:6379
+  MESSENGER_TRANSPORT_DSN: redis://default:${REDIS_PASSWORD}@redis:6379/messages
+  MESSENGER_FAILED_TRANSPORT_DSN: redis://default:${REDIS_PASSWORD}@redis:6379/messages_failed
+  TRUSTED_PROXIES: 127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+  DEFAULT_URI: https://${API_DOMAIN:?}
+  APP_PUBLIC_URL: https://${SITE_DOMAIN:?}
+  CORS_ALLOW_ORIGIN: ${BACKEND_CORS_ALLOW_ORIGIN:?}
+  MAILER_DSN: ${BACKEND_MAILER_DSN:-null://null}
+  MAILER_FROM_ADDRESS: ${MAILER_FROM_ADDRESS:-}
+  MAILER_FROM_NAME: ${MAILER_FROM_NAME:-CCAPAC}
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY:?}
+  MAKUTA_ENV: ${MAKUTA_ENV:-dev}
+  MAKUTA_CLIENT_ID: ${MAKUTA_CLIENT_ID:-}
+  MAKUTA_CLIENT_SECRET: ${MAKUTA_CLIENT_SECRET:-}
+  MAKUTA_X_EXTENSION: ${MAKUTA_X_EXTENSION:-}
+  MAKUTA_PRIVATE_KEY_PATH: /run/secrets/makuta_private_key
+  CAMPAIGN_GOAL_USD: ${CAMPAIGN_GOAL_USD:-0}
+
+services:
+  # ---------------------------------------------------------------------------
+  # Point d'entrée unique : TLS, filtrage, limites de débit, logs d'accès
+  # ---------------------------------------------------------------------------
+  nginx:
+    <<: *hardening
+    image: ${REGISTRY:-ccapac}/nginx:${IMAGE_TAG:-local}
+    build: ./infra/nginx
+    read_only: true
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?}
+      API_DOMAIN: ${API_DOMAIN:?}
+      NODE_API_DOMAIN: ${NODE_API_DOMAIN:?}
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/conf.d
+    tmpfs:
+      - /etc/nginx/conf.d
+      - /etc/nginx/certs
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot
+    networks: [frontend]
+    depends_on:
+      frontend: { condition: service_started }
+      backend: { condition: service_started }
+      node-api: { condition: service_started }
+
+  # Obtention / renouvellement des certificats Let's Encrypt (webroot).
+  certbot:
+    <<: *hardening
+    image: certbot/certbot:v3.1.0
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks: [frontend]
+
+  # ---------------------------------------------------------------------------
+  # Applications
+  # ---------------------------------------------------------------------------
+  frontend:
+    <<: *app-hardening
+    image: ${REGISTRY:-ccapac}/frontend:${FRONTEND_IMAGE_TAG:-${IMAGE_TAG:-local}}
+    build:
+      context: ./frontend
+      target: runner
+      args:
+        NEXT_PUBLIC_CONTENT_API_URL: https://${API_DOMAIN}/api/content
+        NEXT_PUBLIC_API_URL: https://${NODE_API_DOMAIN}/api
+        NEXT_PUBLIC_SITE_URL: https://${SITE_DOMAIN}
+        NEXT_PUBLIC_URL: https://${SITE_DOMAIN}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_PAYMENT_ENABLED: ${PAYMENT_ENABLED:-false}
+    environment:
+      DATABASE_URL: postgresql://ccapac_members:${POSTGRES_MEMBERS_PASSWORD:?}@postgres:5432/ccapac_members?schema=public
+      JWT_SECRET: ${JWT_SECRET:?}
+      EMAIL_RELAY_SECRET: ${EMAIL_RELAY_SECRET:?}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      APP_BASE_URL: https://${SITE_DOMAIN}
+      # Domaine public (et non http://backend:8080) : Symfony construit les URLs
+      # absolues des médias à partir de l'hôte de la requête.
+      CONTENT_API_BASE_URL: https://${API_DOMAIN}/api/content
+      FUNDRAISING_API_BASE_URL: https://${API_DOMAIN}/api/fundraising
+      API_URL: http://node-api:5000/api
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_PASS: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${MAILER_FROM_ADDRESS:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      FUNDRAISING_ADMIN_EMAILS: ${FUNDRAISING_ADMIN_EMAILS:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      AKSESSIFY_API_BASE_URL: ${AKSESSIFY_API_BASE_URL:-}
+      AKSESSIFY_API_KEY: ${AKSESSIFY_API_KEY:-}
+      AKSESSIFY_CAMPAIGN_ID: ${AKSESSIFY_CAMPAIGN_ID:-}
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1000,gid=1000
+    networks: [frontend, backend]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  backend:
+    <<: *app-hardening
+    image: ${REGISTRY:-ccapac}/backend:${IMAGE_TAG:-local}
+    build:
+      context: ./backend
+      target: prod
+    environment: *backend-env
+    secrets: [makuta_private_key]
+    tmpfs:
+      - /app/var:uid=82,gid=82
+      - /tmp
+    volumes:
+      - backend_uploads:/app/public/uploads
+    networks: [frontend, backend]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  # Consomme la file Messenger (e-mails, traitements asynchrones).
+  worker:
+    <<: *app-hardening
+    image: ${REGISTRY:-ccapac}/backend:${IMAGE_TAG:-local}
+    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=200M", "-v"]
+    environment: *backend-env
+    secrets: [makuta_private_key]
+    tmpfs:
+      - /app/var:uid=82,gid=82
+      - /tmp
+    volumes:
+      - backend_uploads:/app/public/uploads
+    healthcheck:
+      disable: true
+    networks: [frontend, backend] # frontend = sortie Internet (SMTP)
+    depends_on:
+      backend: { condition: service_healthy }
+
+  # Tâches planifiées Symfony Scheduler (réconciliation / expiration des dons).
+  scheduler:
+    <<: *app-hardening
+    image: ${REGISTRY:-ccapac}/backend:${IMAGE_TAG:-local}
+    command: ["php", "bin/console", "messenger:consume", "scheduler_default", "--time-limit=3600", "--memory-limit=200M", "-v"]
+    environment: *backend-env
+    secrets: [makuta_private_key]
+    tmpfs:
+      - /app/var:uid=82,gid=82
+      - /tmp
+    healthcheck:
+      disable: true
+    networks: [frontend, backend] # frontend = sortie Internet (API Makuta)
+    depends_on:
+      backend: { condition: service_healthy }
+
+  node-api:
+    <<: *app-hardening
+    image: ${REGISTRY:-ccapac}/node-api:${IMAGE_TAG:-local}
+    build: ./node-api
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      DB_HOST: node-db
+      DB_PORT: "3306"
+      DB_NAME: ccapac_node
+      DB_USER: ccapac_node
+      DB_PASSWORD: ${NODE_DB_PASSWORD:?}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      FRONTEND_URL: https://${SITE_DOMAIN}
+      CORS_EXTRA_ORIGINS: https://www.${SITE_DOMAIN}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      EMAIL_RELAY_URL: http://frontend:3000/api/internal/send-email
+      EMAIL_RELAY_SECRET: ${EMAIL_RELAY_SECRET}
+      INTERNAL_AUTH_PATH: ${INTERNAL_AUTH_PATH:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    tmpfs:
+      - /tmp
+    volumes:
+      - node_uploads:/app/uploads
+    networks: [frontend, backend]
+    depends_on:
+      node-db: { condition: service_healthy }
+
+  # ---------------------------------------------------------------------------
+  # Données (réseau backend uniquement — inaccessible depuis Internet)
+  # ---------------------------------------------------------------------------
+  postgres:
+    <<: *hardening
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_API_PASSWORD: ${POSTGRES_API_PASSWORD}
+      POSTGRES_MEMBERS_PASSWORD: ${POSTGRES_MEMBERS_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - log_min_duration_statement=1000
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
+      - -c
+      - log_line_prefix=%m [%p] %u@%d
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ccapac_api"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [backend]
+
+  redis:
+    <<: *hardening
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?}
+      - --appendonly
+      - "yes"
+      # Pas d'éviction : la file Messenger ne doit jamais perdre de messages.
+      - --maxmemory-policy
+      - noeviction
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [backend]
+
+  # TRANSITOIRE : le node-api est écrit en SQL MySQL (mysql2, ~225 requêtes).
+  # À supprimer une fois le portage vers PostgreSQL effectué (voir docs/ARCHITECTURE.md).
+  node-db:
+    <<: *hardening
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ccapac_node
+      MYSQL_USER: ccapac_node
+      MYSQL_PASSWORD: ${NODE_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${NODE_DB_ROOT_PASSWORD:?}
+    volumes:
+      - node_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uccapac_node -p$$MYSQL_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [backend]
+
+  # Sauvegarde quotidienne chiffrée (age) + copie hors serveur (rclone).
+  backup:
+    <<: *hardening
+    image: ${REGISTRY:-ccapac}/backup:${IMAGE_TAG:-local}
+    build: ./infra/backup
+    environment:
+      TZ: ${TZ:-Africa/Kinshasa}
+      BACKUP_CRON: ${BACKUP_CRON:-30 2 * * *}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
+      BACKUP_RCLONE_DEST: ${BACKUP_RCLONE_DEST:-}
+      RCLONE_CONFIG: /config/rclone/rclone.conf
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      NODE_DB_PASSWORD: ${NODE_DB_PASSWORD}
+    volumes:
+      - backups:/backups
+      - backend_uploads:/data/backend:ro
+      - node_uploads:/data/node-api:ro
+      - ./infra/secrets/rclone.conf:/config/rclone/rclone.conf:ro
+    networks: [frontend, backend] # frontend = sortie Internet (stockage externe)
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # ---------------------------------------------------------------------------
+  # Outils ponctuels (profil "tools") — lancés par infra/scripts/deploy.sh
+  # ---------------------------------------------------------------------------
+  frontend-migrate:
+    image: ${REGISTRY:-ccapac}/frontend-migrator:${IMAGE_TAG:-local}
+    build:
+      context: ./frontend
+      target: migrator
+    profiles: [tools]
+    environment:
+      DATABASE_URL: postgresql://ccapac_members:${POSTGRES_MEMBERS_PASSWORD}@postgres:5432/ccapac_members?schema=public
+    networks: [backend]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+networks:
+  # Nginx ↔ applications (et sortie Internet des applications).
+  frontend:
+  # Applications ↔ données. `internal` : aucune route vers / depuis Internet.
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  node_db_data:
+  backend_uploads:
+  node_uploads:
+  backups:
+  letsencrypt:
+  certbot_www:
+
+secrets:
+  makuta_private_key:
+    file: ./infra/secrets/makuta_private.pem

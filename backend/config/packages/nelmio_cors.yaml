@@ -8,9 +8,10 @@ nelmio_cors:
         max_age: 3600
         expose_headers: ['Link']
     paths:
-        # API publique de don : ouverte (le frontend Next.js l'appelle côté navigateur).
+        # API publique (contenu, dons) : appelée par le navigateur depuis le site
+        # Next.js uniquement. Les callbacks Makuta sont serveur à serveur (hors CORS).
         '^/api/':
-            allow_origin: ['*']
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
             allow_credentials: false
             allow_headers: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
             allow_methods: ['GET', 'POST', 'OPTIONS']
