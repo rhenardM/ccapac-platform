@@ -1,0 +1,95 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Tableau de bord{% endblock %}
+
+{% block main %}
+    {# --- Barre de progression de la collecte --- #}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                <strong>Progression de la collecte</strong>
+                <span>{{ collected|number_format(2, '.', ' ') }} USD / {{ goal|number_format(2, '.', ' ') }} USD &nbsp;<b>({{ progress }}%)</b></span>
+            </div>
+            <div class="progress" style="height: 14px;">
+                <div class="progress-bar" role="progressbar"
+                    style="width: {{ progress }}%; background:#1f4f7a;"
+                    aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
+    {# --- Cartes KPI --- #}
+    <div class="row">
+        {% set cards = [
+            {label: 'Total encaissé', value: (collected|number_format(2, '.', ' ')) ~ ' USD', icon: 'fa-sack-dollar', color: '#1f7a4f'},
+            {label: 'Dons confirmés', value: paidCount, icon: 'fa-circle-check', color: '#1f4f7a'},
+            {label: 'En attente', value: pendingCount, icon: 'fa-clock', color: '#b8860b'},
+            {label: 'Échoués / expirés', value: failedCount, icon: 'fa-circle-xmark', color: '#a12a2a'},
+            {label: 'Taux de succès', value: successRate ~ '%', icon: 'fa-chart-pie', color: '#5a3f9a'},
+            {label: 'Transactions totales', value: totalCount, icon: 'fa-list', color: '#555'},
+        ] %}
+        {% for c in cards %}
+            <div class="col-md-4 col-lg-2 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fa {{ c.icon }} fa-lg mb-2" style="color: {{ c.color }};"></i>
+                        <div style="font-size:1.4rem; font-weight:700; color:{{ c.color }};">{{ c.value }}</div>
+                        <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:.04em;">{{ c.label }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="row">
+        {# --- Répartition par opérateur (payés) --- #}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><strong>Encaissé par opérateur</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Opérateur</th><th class="text-end">Dons</th><th class="text-end">Montant</th></tr></thead>
+                        <tbody>
+                        {% for row in byOperator %}
+                            <tr>
+                                <td>{{ row.operatorLabel|default(row.operator) }}</td>
+                                <td class="text-end">{{ row.count }}</td>
+                                <td class="text-end">{{ row.amount|number_format(2, '.', ' ') }} USD</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">Aucun don confirmé pour l'instant.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- Derniers dons --- #}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><strong>Derniers dons</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Référence</th><th>Montant</th><th>Statut</th><th>Date</th></tr></thead>
+                        <tbody>
+                        {% for d in recent %}
+                            <tr>
+                                <td><code>{{ d.reference }}</code></td>
+                                <td>{{ d.amount }} {{ d.currency }}</td>
+                                <td>
+                                    {% set badge = {'paid':'success','pending':'warning','failed':'danger','expired':'secondary'}[d.status]|default('secondary') %}
+                                    <span class="badge bg-{{ badge }}">{{ d.status }}</span>
+                                </td>
+                                <td>{{ d.createdAt|date('d/m/Y H:i') }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">Aucun don.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de don — {{ donation.reference }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            color: #333333;
+        }
+        .wrapper {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        /* En-tête */
+        .header {
+            background-color: #CD935B;
+            padding: 32px 40px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .header p {
+            margin: 6px 0 0;
+            color: #fbeee2;
+            font-size: 13px;
+        }
+        /* Logo blanc dans l'en-tête coloré */
+        .header-logo {
+            display: block;
+            max-width: 210px;
+            width: 55%;
+            height: auto;
+            margin: 0 auto 14px;
+        }
+        /* Corps */
+        .body {
+            padding: 36px 40px;
+        }
+        .salutation {
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .intro {
+            color: #555555;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+        /* Bloc récapitulatif */
+        .receipt-box {
+            background-color: #f0f5fb;
+            border-left: 4px solid #CD935B;
+            border-radius: 4px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+        }
+        .receipt-box h2 {
+            margin: 0 0 16px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1a3a5c;
+        }
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .receipt-table td {
+            padding: 6px 0;
+            font-size: 14px;
+        }
+        .receipt-table td:first-child {
+            color: #777777;
+            width: 45%;
+        }
+        .receipt-table td:last-child {
+            font-weight: bold;
+            color: #1a3a5c;
+        }
+        /* Badge statut */
+        .badge {
+            display: inline-block;
+            background-color: #2e7d32;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Montant mis en valeur */
+        .amount-highlight {
+            font-size: 20px;
+            color: #1a3a5c;
+        }
+        /* Message de remerciement */
+        .thank-you {
+            background-color: #fffbf0;
+            border: 1px solid #f0d060;
+            border-radius: 4px;
+            padding: 16px 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555555;
+            margin-bottom: 28px;
+        }
+        /* Pied de page */
+        .footer {
+            background-color: #f9f9f9;
+            border-top: 1px solid #eeeeee;
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #1a3a5c;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- En-tête -->
+    <div class="header">
+        {% if hasLogo %}<img src="cid:logo" class="header-logo" alt="CCAPAC — Centre Culturel et Artistique pour les Pays d'Afrique Centrale">{% endif %}
+        <h1>Biblio-Librairie du Grand Tambour</h1>
+        <p>Centre Culturel · Kinshasa</p>
+    </div>
+
+    <!-- Corps -->
+    <div class="body">
+
+        <p class="salutation">Bonjour <strong>{{ donation.donor.name }}</strong>,</p>
+
+        <p class="intro">
+            Votre don a bien été reçu et confirmé. Au nom de toute l'équipe du Grand Tambour,
+            nous vous adressons nos sincères remerciements pour votre soutien à notre
+            Biblio-Librairie.
+        </p>
+
+        <!-- Récapitulatif -->
+        <div class="receipt-box">
+            <h2>Récapitulatif de votre don</h2>
+            <table class="receipt-table">
+                <tr>
+                    <td>Référence</td>
+                    <td>{{ donation.reference }}</td>
+                </tr>
+                <tr>
+                    <td>Statut</td>
+                    <td><span class="badge">Confirmé</span></td>
+                </tr>
+                <tr>
+                    <td>Montant</td>
+                    <td class="amount-highlight">{{ donation.amount }} {{ donation.currency }}</td>
+                </tr>
+                <tr>
+                    <td>Palier</td>
+                    <td>{{ donation.tier.label() }}</td>
+                </tr>
+                <tr>
+                    <td>Moyen de paiement</td>
+                    <td>{{ donation.operator.label() }}</td>
+                </tr>
+                <tr>
+                    <td>Date</td>
+                    <td>{{ (donation.confirmedAt ?? donation.createdAt)|date('d/m/Y à H:i') }}</td>
+                </tr>
+                {% if donation.donor.phone %}
+                <tr>
+                    <td>Téléphone</td>
+                    <td>{{ donation.donor.phone }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <!-- Message de remerciement -->
+        <div class="thank-you">
+            Votre contribution est intégralement affectée au développement de la Biblio-Librairie :
+            espace de lecture, acquisition d'ouvrages, ateliers d'écriture et médiation culturelle
+            pour toutes les générations. Vous faites partie de ceux qui rendent cela possible.
+        </div>
+
+        <p style="color: #555555; line-height: 1.6;">
+            Conservez ce message comme justificatif de votre don. Pour toute question,
+            contactez-nous à <a href="mailto:info@centreculturel.cd" style="color: #1a3a5c;">info@centreculturel.cd</a>.
+        </p>
+
+        <p style="margin-top: 28px; color: #333333;">
+            Avec toute notre gratitude,<br>
+            <strong>L'équipe du Grand Tambour</strong>
+        </p>
+
+    </div>
+
+    <!-- Pied de page -->
+    <div class="footer">
+        <p>
+            Biblio-Librairie du Grand Tambour · Centre Culturel · Kinshasa, RDC<br>
+            <a href="mailto:munongo.bonkey@centreculturel.cd">munongo.bonkey@centreculturel.cd</a>
+        </p>
+        <p style="margin-top: 8px; font-size: 11px;">
+            Ce message a été envoyé automatiquement suite à votre don (réf. {{ donation.reference }}).
+            Merci de ne pas y répondre directement.
+        </p>
+    </div>
+
+</div>
+</body>
+</html>

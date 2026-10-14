@@ -1,0 +1,66 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    role_hierarchy:
+        # Un admin voit toutes les sections ; chaque rôle de section a l'accès de base.
+        ROLE_ADMIN: [ROLE_STAFF, ROLE_CONTENT, ROLE_ACTION_CULTURELLE, ROLE_ACTUALITES, ROLE_CINEMATHEQUE, ROLE_ESPACES]
+        ROLE_SUPER_ADMIN: [ROLE_ADMIN]
+        ROLE_CONTENT: [ROLE_STAFF]
+        ROLE_ACTION_CULTURELLE: [ROLE_STAFF]
+        ROLE_ACTUALITES: [ROLE_STAFF]
+        ROLE_CINEMATHEQUE: [ROLE_STAFF]
+        ROLE_ESPACES: [ROLE_STAFF]
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+        # API admin (JSON) : authentification par jeton Bearer opaque, sans session.
+        admin_api:
+            pattern: ^/api/admin
+            stateless: true
+            provider: app_user_provider
+            access_token:
+                token_handler: App\Security\ApiTokenHandler
+        main:
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+                default_target_path: admin
+            logout:
+                path: app_logout
+                target: app_login
+
+    # Seule la PREMIÈRE règle qui matche s'applique.
+    access_control:
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        # Fichiers média uploadés (servis publiquement).
+        - { path: ^/uploads, roles: PUBLIC_ACCESS }
+        # Connexion à l'API admin : publique (renvoie un jeton).
+        - { path: ^/api/admin/login, roles: PUBLIC_ACCESS }
+        # Reste de l'API admin : jeton Bearer + rôle admin requis.
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
+        # API publique de don (le frontend Next.js l'appelle) + doc Swagger + callback Makuta.
+        - { path: ^/api, roles: PUBLIC_ACCESS }
+        # Back-office HTML : tout membre du staff authentifié (le cloisonnement
+        # par section est géré par les rôles sur le menu et les CRUD).
+        - { path: ^/admin, roles: ROLE_STAFF }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

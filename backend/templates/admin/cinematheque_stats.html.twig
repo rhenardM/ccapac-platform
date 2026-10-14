@@ -1,0 +1,96 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Statistiques Cinémathèque{% endblock %}
+
+{% block main %}
+    {# --- Cartes KPI --- #}
+    <div class="row">
+        {% set cards = [
+            {label: 'Vues totales', value: totalViews|number_format(0, '.', ' '), icon: 'fa-eye', color: '#1f4f7a'},
+            {label: 'Vues aujourd\'hui', value: viewsToday|number_format(0, '.', ' '), icon: 'fa-calendar-day', color: '#1f7a4f'},
+            {label: 'Vues (7 derniers jours)', value: viewsThisWeek|number_format(0, '.', ' '), icon: 'fa-chart-line', color: '#5a3f9a'},
+        ] %}
+        {% for c in cards %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fa {{ c.icon }} fa-lg mb-2" style="color: {{ c.color }};"></i>
+                        <div style="font-size:1.4rem; font-weight:700; color:{{ c.color }};">{{ c.value }}</div>
+                        <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:.04em;">{{ c.label }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="row">
+        {# --- Classement des films les plus consultés --- #}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><strong>Films les plus consultés</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>#</th><th>Film</th><th class="text-end">Vues</th></tr></thead>
+                        <tbody>
+                        {% for film in topFilms %}
+                            <tr>
+                                <td class="text-muted">{{ loop.index }}</td>
+                                <td>{{ film.title }}</td>
+                                <td class="text-end"><strong>{{ film.viewCount|number_format(0, '.', ' ') }}</strong></td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">Aucune vue comptabilisée pour l'instant.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- Classement des projections les plus consultées --- #}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><strong>Projections les plus consultées</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>#</th><th>Projection</th><th class="text-end">Vues</th></tr></thead>
+                        <tbody>
+                        {% for screening in topScreenings %}
+                            <tr>
+                                <td class="text-muted">{{ loop.index }}</td>
+                                <td>{{ screening.film.title }} — {{ screening.scheduledDate|date('d/m/Y') }}</td>
+                                <td class="text-end"><strong>{{ screening.viewCount|number_format(0, '.', ' ') }}</strong></td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">Aucune vue comptabilisée pour l'instant.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {# --- Évolution des consultations (14 derniers jours, films + projections) --- #}
+        <div class="col-12 mb-3">
+            <div class="card">
+                <div class="card-header"><strong>Évolution des consultations (14 derniers jours)</strong></div>
+                <div class="card-body">
+                    {% set maxCount = dailyCounts|reduce((max, count) => count > max ? count : max, 1) %}
+                    {% for day, count in dailyCounts %}
+                        <div class="d-flex align-items-center mb-1" style="font-size:.8rem;">
+                            <div class="text-muted" style="width:70px; flex-shrink:0;">{{ day|date('d/m') }}</div>
+                            <div class="progress flex-grow-1" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar"
+                                    style="width: {{ (count / maxCount * 100)|round }}%; background:#1f4f7a;"
+                                    aria-valuenow="{{ count }}" aria-valuemin="0" aria-valuemax="{{ maxCount }}"></div>
+                            </div>
+                            <div style="width:40px; flex-shrink:0;" class="text-end fw-bold">{{ count }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

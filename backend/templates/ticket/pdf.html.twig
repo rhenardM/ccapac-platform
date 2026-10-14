@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page { margin: 0; }
+    body {
+        margin: 0;
+        background: #eeece6;
+        font-family: 'DejaVu Sans', sans-serif;
+        color: #3a2416;
+    }
+
+    .ticket {
+        position: relative;
+        width: 540pt;
+        height: 280pt;
+        margin: 10pt;
+    }
+
+    /* --- Panneau principal (talon) --- */
+    .main-panel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 370pt;
+        height: 280pt;
+        background-color: #1a120c;
+        background-image: linear-gradient(135deg, #1f1610, #100b07);
+        border-radius: 10pt 0 0 10pt;
+        overflow: hidden;
+    }
+    .main-inner { padding: 16pt 26pt 0 26pt; }
+
+    .brand-row { display: block; margin-bottom: 9pt; }
+    .monogram {
+        display: inline-block;
+        width: 22pt;
+        height: 22pt;
+        border: 1.2pt solid #cd935b;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 20pt;
+        font-size: 8pt;
+        font-weight: bold;
+        color: #cd935b;
+        vertical-align: middle;
+    }
+    .brand-text { display: inline-block; vertical-align: middle; margin-left: 8pt; }
+    .brand-text .l1 { font-size: 8pt; font-weight: bold; letter-spacing: 0.5pt; color: #f1e9dc; }
+    .brand-text .l2 { font-size: 5.5pt; letter-spacing: 0.3pt; color: #cd935b; }
+
+    .kicker {
+        font-size: 8.5pt;
+        font-weight: bold;
+        letter-spacing: 2.5pt;
+        color: #cd935b;
+        margin-bottom: 2pt;
+    }
+    .headline {
+        font-family: serif;
+        font-size: 21pt;
+        font-weight: bold;
+        color: #f8f2e8;
+        line-height: 1.05;
+        margin-bottom: 5pt;
+    }
+    .tagline {
+        font-size: 8pt;
+        font-style: italic;
+        color: #cbb9a2;
+        margin-bottom: 8pt;
+    }
+    .divider-gold { border-top: 0.75pt solid #6b4a30; margin: 7pt 0; width: 318pt; }
+
+    .info-row { display: table; width: 318pt; table-layout: fixed; margin-bottom: 8pt; }
+    .info-col { display: table-cell; vertical-align: top; }
+    .info-label {
+        font-size: 6pt;
+        font-weight: bold;
+        letter-spacing: 1pt;
+        color: #cd935b;
+        margin-bottom: 2pt;
+    }
+    .info-value { font-size: 9.5pt; font-weight: bold; color: #f1e9dc; }
+
+    .thanks-bar {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 370pt;
+        height: 34pt;
+        background-color: #cd935b;
+        background-image: linear-gradient(90deg, #b97c46, #dcab74);
+        border-radius: 0 0 0 10pt;
+    }
+    .thanks-text {
+        padding-top: 10pt;
+        text-align: center;
+        font-family: serif;
+        font-style: italic;
+        font-size: 11pt;
+        color: #2a1a10;
+    }
+
+    /* --- Souche (contrefort) --- */
+    .counterfoil {
+        position: absolute;
+        left: 370pt;
+        top: 0;
+        width: 170pt;
+        height: 280pt;
+        background-color: #fbf7ef;
+        border-radius: 0 10pt 10pt 0;
+        overflow: hidden;
+    }
+    .counterfoil-inner { padding: 10pt 20pt 0 20pt; text-align: center; }
+
+    .cf-brand { font-size: 9pt; font-weight: bold; letter-spacing: 0.5pt; color: #3a2416; }
+    .cf-brand-sub { font-size: 7pt; letter-spacing: 0.5pt; color: #cd935b; margin-bottom: 5pt; }
+
+    .cf-label {
+        font-size: 6pt;
+        font-weight: bold;
+        letter-spacing: 1.5pt;
+        color: #8a7a6a;
+        margin-bottom: 3pt;
+    }
+    .cf-ticket-number {
+        display: inline-block;
+        background-color: #cd935b;
+        color: #2a1a10;
+        font-size: 8.5pt;
+        font-weight: bold;
+        letter-spacing: 0.3pt;
+        padding: 3pt 8pt;
+        border-radius: 3pt;
+        margin-bottom: 4pt;
+        white-space: nowrap;
+    }
+
+    .cf-status { font-size: 6.5pt; font-weight: bold; margin-bottom: 5pt; }
+
+    .cf-qr { margin: 1pt 0 3pt 0; }
+    .cf-qr img { width: 64pt; height: 64pt; }
+    .cf-qr-caption {
+        font-size: 5.5pt;
+        font-weight: bold;
+        letter-spacing: 0.5pt;
+        color: #8a7a6a;
+        margin-bottom: 5pt;
+    }
+
+    .cf-divider { border-top: 0.75pt dashed #d5b58d; margin-bottom: 5pt; }
+
+    .cf-info-row { display: table; width: 130pt; font-size: 7pt; margin-bottom: 3pt; }
+    .cf-info-row .l { display: table-cell; text-align: left; color: #8a7a6a; font-weight: bold; letter-spacing: 0.3pt; }
+    .cf-info-row .v { display: table-cell; text-align: right; color: #3a2416; font-weight: bold; }
+
+    .cf-footer {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 170pt;
+        height: 20pt;
+        background-color: #3a2416;
+        border-radius: 0 0 10pt 0;
+        text-align: center;
+        padding-top: 6pt;
+    }
+    .cf-footer span {
+        font-size: 6pt;
+        font-weight: bold;
+        letter-spacing: 1pt;
+        color: #eecfa8;
+    }
+
+    /* --- Découpe (pointillés + encoches) --- */
+    .seam-line {
+        position: absolute;
+        left: 370pt;
+        top: 8pt;
+        width: 0;
+        height: 264pt;
+        border-left: 1.4pt dashed #cbb9a2;
+    }
+    .notch {
+        position: absolute;
+        width: 16pt;
+        height: 16pt;
+        background: #eeece6;
+        border-radius: 50%;
+    }
+    .notch-left { left: -8pt; top: 132pt; }
+    .notch-right { left: 532pt; top: 132pt; }
+    .notch-seam-top { left: 362pt; top: -8pt; }
+    .notch-seam-bottom { left: 362pt; top: 272pt; }
+</style>
+</head>
+<body>
+<div class="ticket">
+
+    <div class="main-panel">
+        <div class="main-inner">
+            <div class="brand-row"><span class="monogram">CC</span><span class="brand-text"><span class="l1">CENTRE CULTUREL</span><br><span class="l2">ET ARTISTIQUE POUR LES PAYS D'AFRIQUE CENTRALE</span></span></div>
+
+            <div class="kicker">CINÉ-DIMANCHE</div>
+            <div class="headline">Billet de Cinéma</div>
+            <div class="tagline">Une rencontre, une histoire, une émotion.</div>
+
+            <div class="divider-gold"></div>
+
+            <div class="info-row"><div class="info-col"><div class="info-label">DATE</div><div class="info-value">{{ screening.scheduledDate ? screening.scheduledDate|date('d/m/Y') : '—' }}</div></div><div class="info-col"><div class="info-label">HEURE</div><div class="info-value">{{ screening.startTime ? screening.startTime|date('H:i') : '—' }}</div></div><div class="info-col"><div class="info-label">SALLE</div><div class="info-value">{{ screening.venue ?? '—' }}</div></div></div>
+
+            <div class="info-row"><div class="info-col"><div class="info-label">FILM</div><div class="info-value">{{ film ? film.title : '—' }}</div></div><div class="info-col"><div class="info-label">RÉALISATEUR</div><div class="info-value">{{ film and film.director ? film.director : '—' }}</div></div><div class="info-col"><div class="info-label">LANGUE</div><div class="info-value">{{ film and film.language ? film.language : '—' }}</div></div></div>
+        </div>
+
+        <div class="thanks-bar">
+            <div class="thanks-text">Merci et bonne séance !</div>
+        </div>
+    </div>
+
+    <div class="counterfoil">
+        <div class="counterfoil-inner">
+            <div class="cf-brand">CENTRE CULTUREL</div>
+            <div class="cf-brand-sub">CINÉ-DIMANCHE</div>
+
+            <div class="cf-label">BILLET</div>
+            <div class="cf-ticket-number">N° {{ ticket.ticketNumber }}</div>
+            <div class="cf-status" style="color: {{ ticket.status.value == 'active' ? '#1f7a3d' : (ticket.status.value == 'used' ? '#777777' : '#a4302f') }};">● {{ ticket.status.label }}</div>
+
+            {% if qrCodeAbsolutePath %}
+            <div class="cf-qr"><img src="{{ qrCodeAbsolutePath }}" alt="QR Code"></div>
+            <div class="cf-qr-caption">SCANEZ POUR ACCÉDER<br>À VOTRE SÉANCE</div>
+            {% endif %}
+
+            <div class="cf-divider"></div>
+
+            <div class="cf-info-row"><div class="l">PARTICIPANT</div><div class="v">{{ registration.fullName }}</div></div>
+            <div class="cf-info-row"><div class="l">DATE</div><div class="v">{{ screening.scheduledDate ? screening.scheduledDate|date('d/m/Y') : '—' }}</div></div>
+            <div class="cf-info-row"><div class="l">HEURE</div><div class="v">{{ screening.startTime ? screening.startTime|date('H:i') : '—' }}</div></div>
+            <div class="cf-info-row"><div class="l">SALLE</div><div class="v">{{ screening.venue ?? '—' }}</div></div>
+            {% if not screening.isFree %}
+            <div class="cf-info-row"><div class="l">TARIF</div><div class="v">{{ screening.price ? screening.price ~ ' FC' : '—' }} — à régler au guichet</div></div>
+            {% endif %}
+        </div>
+
+        <div class="cf-footer"><span>WWW.CENTRECULTUREL.CD</span></div>
+    </div>
+
+    <div class="seam-line"></div>
+    <span class="notch notch-left"></span>
+    <span class="notch notch-right"></span>
+    <span class="notch notch-seam-top"></span>
+    <span class="notch notch-seam-bottom"></span>
+
+</div>
+</body>
+</html>

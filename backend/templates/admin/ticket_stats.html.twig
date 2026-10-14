@@ -1,0 +1,117 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Statistiques billets{% endblock %}
+
+{% block main %}
+    {# --- Cartes KPI --- #}
+    <div class="row">
+        {% set cards = [
+            {label: 'Billets émis', value: issued|number_format(0, '.', ' '), icon: 'fa-ticket', color: '#1f4f7a'},
+            {label: 'Utilisés (entrées)', value: counts.used|number_format(0, '.', ' '), icon: 'fa-check-circle', color: '#1a8754'},
+            {label: 'Actifs (non présentés)', value: counts.active|number_format(0, '.', ' '), icon: 'fa-clock', color: '#c9820c'},
+            {label: 'Annulés', value: counts.cancelled|number_format(0, '.', ' '), icon: 'fa-ban', color: '#c0392b'},
+        ] %}
+        {% for c in cards %}
+            <div class="col-md-3 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fa {{ c.icon }} fa-lg mb-2" style="color: {{ c.color }};"></i>
+                        <div style="font-size:1.4rem; font-weight:700; color:{{ c.color }};">{{ c.value }}</div>
+                        <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:.04em;">{{ c.label }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fa fa-percent fa-lg mb-2" style="color:#5a3f9a;"></i>
+                    <div style="font-size:1.4rem; font-weight:700; color:#5a3f9a;">{{ attendanceRate }}%</div>
+                    <div class="text-muted" style="font-size:.75rem; text-transform:uppercase; letter-spacing:.04em;">Taux de présence (utilisés / émis)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {# --- Classement par film --- #}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><strong>Billets par film</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>#</th><th>Film</th><th class="text-end">Émis</th><th class="text-end">Utilisés</th></tr></thead>
+                        <tbody>
+                        {% for row in byFilm %}
+                            <tr>
+                                <td class="text-muted">{{ loop.index }}</td>
+                                <td>{{ row.title }}</td>
+                                <td class="text-end"><strong>{{ row.issued|number_format(0, '.', ' ') }}</strong></td>
+                                <td class="text-end">{{ row.used|number_format(0, '.', ' ') }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">Aucun billet émis pour l'instant.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# --- Classement par séance, avec taux de remplissage --- #}
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><strong>Billets par séance</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>#</th><th>Séance</th><th class="text-end">Émis</th><th class="text-end">Remplissage</th></tr></thead>
+                        <tbody>
+                        {% for row in byScreening %}
+                            <tr>
+                                <td class="text-muted">{{ loop.index }}</td>
+                                <td>{{ row.filmTitle }} — {{ row.scheduledDate|date('d/m/Y') }} {{ row.startTime|date('H:i') }}</td>
+                                <td class="text-end"><strong>{{ row.issued|number_format(0, '.', ' ') }}</strong></td>
+                                <td class="text-end">
+                                    {% if row.capacityTotal %}
+                                        {{ (row.issued / row.capacityTotal * 100)|round }}% <span class="text-muted">({{ row.issued }}/{{ row.capacityTotal }})</span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">Aucun billet émis pour l'instant.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {# --- Évolution des émissions de billets (14 derniers jours) --- #}
+        <div class="col-12 mb-3">
+            <div class="card">
+                <div class="card-header"><strong>Billets émis par jour (14 derniers jours)</strong></div>
+                <div class="card-body">
+                    {% set maxCount = dailyCounts|reduce((max, count) => count > max ? count : max, 1) %}
+                    {% for day, count in dailyCounts %}
+                        <div class="d-flex align-items-center mb-1" style="font-size:.8rem;">
+                            <div class="text-muted" style="width:70px; flex-shrink:0;">{{ day|date('d/m') }}</div>
+                            <div class="progress flex-grow-1" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar"
+                                    style="width: {{ (count / maxCount * 100)|round }}%; background:#1f4f7a;"
+                                    aria-valuenow="{{ count }}" aria-valuemin="0" aria-valuemax="{{ maxCount }}"></div>
+                            </div>
+                            <div style="width:40px; flex-shrink:0;" class="text-end fw-bold">{{ count }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

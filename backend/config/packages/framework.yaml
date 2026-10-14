@@ -1,0 +1,55 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # Note that the session will be started ONLY if you read or write from it.
+    session: true
+
+    serializer:
+        enabled: true
+
+    rate_limiter:
+        # Limite les créations de don par IP (anti-abus du formulaire public).
+        donation_limiter:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '5 minutes'
+        # Anti-brute-force sur la connexion à l'API admin.
+        login_limiter:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '1 minute'
+        # Anti-spam du formulaire public de commentaire (par IP).
+        comment_limiter:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '10 minutes'
+        # Anti-abus des réponses de membre relayées par le site Next.js (par auteur).
+        reply_limiter:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '10 minutes'
+        # Anti-abus du comptage de vues d'articles (par IP) : large car légitime
+        # de consulter plusieurs articles rapidement, mais borne les scripts.
+        article_view_limiter:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '5 minutes'
+        # Idem pour le comptage de vues de la Cinémathèque (films et projections).
+        film_view_limiter:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '5 minutes'
+        screening_view_limiter:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '5 minutes'
+
+    #esi: true
+    #fragments: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

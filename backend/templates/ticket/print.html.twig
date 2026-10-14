@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Billet {{ ticket.ticketNumber }}</title>
+<style>
+    @page { size: 80mm auto; margin: 0; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: #e5e5e5;
+        font-family: 'Courier New', Courier, monospace;
+        color: #000;
+    }
+
+    .receipt {
+        width: 72mm;
+        margin: 6mm auto;
+        padding: 4mm 3mm;
+        background: #fff;
+    }
+
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+
+    .brand { font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
+    .brand-sub { font-size: 9px; margin-top: 1mm; }
+
+    .kicker { font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-top: 3mm; }
+    .headline { font-size: 15px; font-weight: bold; margin-top: 1mm; }
+
+    .divider { border-top: 1px dashed #000; margin: 3mm 0; }
+
+    .row { font-size: 11px; margin-bottom: 1.5mm; }
+    .row .l { font-weight: bold; }
+    .row .v { float: right; }
+    .row::after { content: ""; display: table; clear: both; }
+
+    .ticket-number {
+        text-align: center;
+        font-size: 15px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        border: 1px solid #000;
+        padding: 2mm;
+        margin: 3mm 0;
+    }
+
+    .status { text-align: center; font-size: 10px; font-weight: bold; margin-bottom: 3mm; }
+
+    .qr { text-align: center; margin: 3mm 0; }
+    .qr svg { width: 38mm; height: 38mm; }
+    .qr-caption { text-align: center; font-size: 9px; margin-bottom: 3mm; }
+
+    .footer { text-align: center; font-size: 10px; font-style: italic; margin-top: 3mm; }
+    .footer-url { text-align: center; font-size: 8px; margin-top: 1mm; letter-spacing: 0.5px; }
+
+    .print-button {
+        display: block;
+        width: 72mm;
+        margin: 0 auto 6mm auto;
+        padding: 3mm;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        background: #cd935b;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    @media print {
+        body { background: #fff; }
+        .receipt { margin: 0 auto; }
+        .print-button { display: none; }
+    }
+</style>
+</head>
+<body>
+
+<button type="button" class="print-button" onclick="window.print()">Imprimer le billet</button>
+
+<div class="receipt">
+    <div class="center">
+        <div class="brand">CENTRE CULTUREL</div>
+        <div class="brand-sub">ET ARTISTIQUE POUR LES PAYS D'AFRIQUE CENTRALE</div>
+        <div class="kicker">CINÉ-DIMANCHE</div>
+        <div class="headline">Billet de Cinéma</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row"><span class="l">Film</span><span class="v">{{ film ? film.title : '—' }}</span></div>
+    <div class="row"><span class="l">Date</span><span class="v">{{ screening.scheduledDate ? screening.scheduledDate|date('d/m/Y') : '—' }}</span></div>
+    <div class="row"><span class="l">Heure</span><span class="v">{{ screening.startTime ? screening.startTime|date('H:i') : '—' }}</span></div>
+    <div class="row"><span class="l">Salle</span><span class="v">{{ screening.venue ?? '—' }}</span></div>
+    <div class="row"><span class="l">Participant</span><span class="v">{{ registration.fullName }}</span></div>
+
+    <div class="ticket-number">N° {{ ticket.ticketNumber }}</div>
+    <div class="status">STATUT : {{ ticket.status.label|upper }}</div>
+
+    {% if qrSvgContent %}
+    <div class="qr">{{ qrSvgContent|raw }}</div>
+    <div class="qr-caption">Scannez pour accéder à votre séance</div>
+    {% endif %}
+
+    <div class="divider"></div>
+
+    <div class="footer">Merci et bonne séance !</div>
+    <div class="footer-url">WWW.CENTRECULTUREL.CD</div>
+</div>
+
+</body>
+</html>

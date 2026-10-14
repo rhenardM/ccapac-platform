@@ -1,0 +1,42 @@
+{
+  "name": "CCAPAC - Centre Culturel et Artistique pour les pays d'Afrique Centrale",
+  "short_name": "CCAPAC",
+  "description": "Centre Culturel et Artistique pour les pays d'Afrique Centrale - Promotion de la culture et des arts d'Afrique Centrale",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f2e9",
+  "theme_color": "#cd935b",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["culture", "art", "education"],
+  "shortcuts": [
+    {
+      "name": "Agenda",
+      "short_name": "Agenda",
+      "description": "Voir les événements à venir",
+      "url": "/agenda",
+      "icons": [{ "src": "/web-app-manifest-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Programmes",
+      "short_name": "Programmes",
+      "description": "Découvrir nos programmes culturels",
+      "url": "/programmes",
+      "icons": [{ "src": "/web-app-manifest-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
