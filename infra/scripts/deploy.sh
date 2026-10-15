@@ -24,7 +24,11 @@ chmod 444 infra/secrets/makuta_private.pem
 chmod 400 infra/secrets/rclone.conf
 
 set_env() { # set_env CLE VALEUR : remplace ou ajoute la ligne dans .env
-	if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi
+	if grep -q "^$1=" .env; then
+		KEY="$1" VALUE="$2" perl -i -pe 's/^\Q$ENV{KEY}\E=.*/$ENV{KEY}=$ENV{VALUE}/' .env
+	else
+		printf '%s=%s\n' "$1" "$2" >> .env
+	fi
 }
 
 if [ "${MODE}" = build ]; then
