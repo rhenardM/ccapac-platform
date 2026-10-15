@@ -47,9 +47,7 @@ when@prod:
             console:
                 type: console
                 process_psr_3_messages: false
-                channels: ["!event", "!doctrine"]
-            deprecation:
-                type: stream
-                channels: [deprecation]
-                path: php://stderr
-                formatter: monolog.formatter.json
+                channels: ["!event", "!doctrine", "!deprecation"]
+            # Les dépréciations (EasyAdmin, Symfony, Doctrine) ne sont pas journalisées
+            # en production : elles noyaient les logs des conteneurs et des migrations.
+            # Elles restent visibles en dev et dans la CI.
