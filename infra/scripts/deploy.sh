@@ -10,7 +10,6 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 log() { echo "[deploy] $(date -u +%H:%M:%S) $*"; }
 
 # Fichiers montés par compose : doivent exister (sinon Docker crée un dossier).
@@ -26,6 +25,9 @@ fi
 chmod 600 .env .env.previous 2>/dev/null || true
 
 set -a; . ./.env; set +a
+# Fichiers compose : COMPOSE_FILE du .env (ex. mode Caddy), sinon prod standard.
+export COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml:docker-compose.prod.yml}"
+COMPOSE=(docker compose)
 log "version ${IMAGE_TAG} (frontend ${FRONTEND_IMAGE_TAG:-$IMAGE_TAG}) — projet ${COMPOSE_PROJECT_NAME}"
 
 rollback() {
@@ -60,10 +62,18 @@ log "démarrage de la nouvelle version"
 "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 180
 
 log "vérification de bout en bout via Nginx"
+check() {
+	if [ -n "${EDGE_PORT:-}" ]; then
+		# Mode Caddy : Nginx écoute en HTTP sur 127.0.0.1:EDGE_PORT.
+		curl -fsS --max-time 5 -H "Host: $1" -H "X-Forwarded-Proto: https" "http://127.0.0.1:${EDGE_PORT}/api/health"
+	else
+		curl -fsSk --max-time 5 --resolve "$1:443:127.0.0.1" "https://$1/api/health"
+	fi
+}
 for host in "${SITE_DOMAIN}" "${API_DOMAIN}" "${NODE_API_DOMAIN}"; do
 	ok=0
 	for _ in $(seq 1 10); do
-		if curl -fsSk --max-time 5 --resolve "${host}:443:127.0.0.1" "https://${host}/api/health" >/dev/null; then
+		if check "${host}" >/dev/null; then
 			ok=1; break
 		fi
 		sleep 3

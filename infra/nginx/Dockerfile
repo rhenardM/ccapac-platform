@@ -1,11 +1,13 @@
 FROM nginx:1.27-alpine
 
 RUN apk add --no-cache openssl \
-	&& rm /etc/nginx/conf.d/default.conf
+	&& rm /etc/nginx/conf.d/default.conf \
+	&& mkdir -p /var/www/certbot
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY snippets/ /etc/nginx/snippets/
 COPY templates/ /etc/nginx/templates/
+COPY templates-behind-proxy/ /etc/nginx/templates-behind-proxy/
 COPY --chmod=755 entrypoint.d/ /docker-entrypoint.d/
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \

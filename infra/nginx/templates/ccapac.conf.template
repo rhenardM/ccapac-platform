@@ -1,8 +1,8 @@
-# Généré au démarrage depuis les variables SITE_DOMAIN, API_DOMAIN, NODE_API_DOMAIN.
+# Mode « TLS direct » : Nginx est exposé sur 80/443 et termine le TLS
+# (certificats Let's Encrypt via le conteneur certbot).
+# Généré au démarrage depuis SITE_DOMAIN, API_DOMAIN, NODE_API_DOMAIN.
 
-upstream frontend_app { zone frontend_app 64k; server frontend:3000 resolve; keepalive 16; }
-upstream backend_app  { zone backend_app 64k;  server backend:8080 resolve;  keepalive 16; }
-upstream node_api_app { zone node_api_app 64k; server node-api:5000 resolve; keepalive 16; }
+include /etc/nginx/snippets/upstreams.conf;
 
 # --- HTTP : challenge ACME puis redirection systématique vers HTTPS ---
 server {
@@ -23,7 +23,6 @@ server {
 	return 444;
 }
 
-# --- www -> domaine principal ---
 server {
 	listen 443 ssl;
 	http2 on;
@@ -32,96 +31,26 @@ server {
 	return 301 https://${SITE_DOMAIN}$request_uri;
 }
 
-# --- Site public + espace membre (Next.js) ---
 server {
 	listen 443 ssl;
 	http2 on;
 	server_name ${SITE_DOMAIN};
 	include /etc/nginx/snippets/tls.conf;
-	include /etc/nginx/snippets/security-headers.conf;
-	include /etc/nginx/snippets/deny-sensitive.conf;
-
-	limit_conn perip 50;
-
-	location ~ ^/api/(fundraising|makuta)/ {
-		limit_req zone=payment burst=10 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://frontend_app;
-	}
-
-	location /_next/static/ {
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://frontend_app;
-		expires 1y;
-		add_header Cache-Control "public, immutable";
-	}
-
-	location / {
-		limit_req zone=general burst=60 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://frontend_app;
-	}
+	include /etc/nginx/snippets/site-frontend.conf;
 }
 
-# --- API Symfony : contenu, dons Makuta, cinémathèque, back-office ---
 server {
 	listen 443 ssl;
 	http2 on;
 	server_name ${API_DOMAIN};
 	include /etc/nginx/snippets/tls.conf;
-	include /etc/nginx/snippets/security-headers.conf;
-	include /etc/nginx/snippets/deny-sensitive.conf;
-
-	limit_conn perip 40;
-
-	# Connexions (back-office HTML et API admin) : anti brute-force.
-	location ~ ^/(login|api/admin/login)$ {
-		limit_req zone=auth burst=5 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://backend_app;
-	}
-
-	# Création de dons / OTP / callbacks Makuta.
-	location /api/fundraising/ {
-		limit_req zone=payment burst=10 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://backend_app;
-	}
-
-	location /uploads/ {
-		limit_req zone=general burst=60 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://backend_app;
-		expires 7d;
-	}
-
-	location / {
-		limit_req zone=api burst=30 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://backend_app;
-	}
+	include /etc/nginx/snippets/site-backend.conf;
 }
 
-# --- API Node : authentification membres/équipe, workflow des demandes ---
 server {
 	listen 443 ssl;
 	http2 on;
 	server_name ${NODE_API_DOMAIN};
 	include /etc/nginx/snippets/tls.conf;
-	include /etc/nginx/snippets/security-headers.conf;
-	include /etc/nginx/snippets/deny-sensitive.conf;
-
-	limit_conn perip 40;
-
-	location ~ ^/api/auth/(login|register|google|forgot-password|reset-password|resend-verification|change-password)$ {
-		limit_req zone=auth burst=5 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://node_api_app;
-	}
-
-	location / {
-		limit_req zone=api burst=30 nodelay;
-		include /etc/nginx/snippets/proxy.conf;
-		proxy_pass http://node_api_app;
-	}
+	include /etc/nginx/snippets/site-node-api.conf;
 }

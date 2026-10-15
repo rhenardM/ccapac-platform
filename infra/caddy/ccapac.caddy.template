@@ -1,0 +1,24 @@
+# CCAPAC — environnement ${ENVIRONMENT}
+# Généré par infra/scripts/caddy-site.sh — ne pas éditer à la main.
+# Caddy termine le TLS (certificats automatiques) et transmet à Nginx
+# (127.0.0.1:${EDGE_PORT}), qui applique filtrage, limites et en-têtes.
+
+${CADDY_HOSTS} {
+	encode zstd gzip
+
+	request_body {
+		max_size 22MB
+	}
+
+	reverse_proxy 127.0.0.1:${EDGE_PORT} {
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	log {
+		output file /var/log/caddy/ccapac-${ENVIRONMENT}.log {
+			roll_size 20MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
