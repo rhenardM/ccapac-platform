@@ -11,3 +11,9 @@ infra/secrets/*
 # OS / IDE
 .DS_Store
 .idea/
+
+# Sauvegardes et dumps (données personnelles) — jamais versionnés
+backups-import/
+/*.sql
+/*.sql.gz
+*.dump
