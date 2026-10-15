@@ -19,10 +19,10 @@ interface ArticleDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  const articles = await getArticles();
-  return articles.map((article) => ({ slug: article.slug }));
-}
+// Contenu toujours frais (fetch `no-store`) : rendu à chaque requête. Une page
+// pré-générée au build passerait en erreur 500 (« static to dynamic ») dès
+// qu'un contenu est ajouté après le build ou que l'API est injoignable au build.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

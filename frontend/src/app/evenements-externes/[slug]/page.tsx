@@ -15,15 +15,14 @@ import {
 } from "lucide-react";
 import { formatEventDateShort } from "@/lib/dateUtils";
 import {
-  getExternalProgrammes,
   getProgrammeBySlug,
   isProgrammePast,
 } from "@/lib/programmes-data";
 
-export async function generateStaticParams() {
-  const events = await getExternalProgrammes();
-  return events.map((event) => ({ slug: event.slug }));
-}
+// Contenu toujours frais (fetch `no-store`) : rendu à chaque requête. Une page
+// pré-générée au build passerait en erreur 500 (« static to dynamic ») dès
+// qu'un contenu est ajouté après le build ou que l'API est injoignable au build.
+export const dynamic = "force-dynamic";
 
 interface ExternalEventPageProps {
   params: Promise<{ slug: string }>;
