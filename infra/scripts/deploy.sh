@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Déploiement d'une version sur le serveur (staging ou production).
-# Appelé par la CI : la nouvelle configuration est déposée dans .env.next.
+# Déploiement d'une version sur le serveur.
+#
+#   bash infra/scripts/deploy.sh           # CI/CD : images GHCR, config déposée dans .env.next
+#   bash infra/scripts/deploy.sh --build   # manuel : après `git pull`, images construites
+#                                          # sur le serveur, étiquetées avec le commit
 #
 #   1. sauvegarde de la configuration courante (.env → .env.previous)
-#   2. pull des images, démarrage des données, migrations
+#   2. pull (ou build) des images, démarrage des données, migrations
 #   3. démarrage des services + attente des healthchecks
 #   4. vérification de bout en bout via Nginx
 #   5. en cas d'échec : rollback automatique sur la version précédente
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
+MODE=pull
+[ "${1:-}" = "--build" ] && MODE=build
 log() { echo "[deploy] $(date -u +%H:%M:%S) $*"; }
 
 # Fichiers montés par compose : doivent exister (sinon Docker crée un dossier).
@@ -18,7 +23,18 @@ touch infra/secrets/makuta_private.pem infra/secrets/rclone.conf
 chmod 444 infra/secrets/makuta_private.pem
 chmod 400 infra/secrets/rclone.conf
 
-if [ -f .env.next ]; then
+set_env() { # set_env CLE VALEUR : remplace ou ajoute la ligne dans .env
+	if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi
+}
+
+if [ "${MODE}" = build ]; then
+	[ -f .env ] || { log ".env absent : lancer d'abord infra/scripts/init-env.sh"; exit 1; }
+	TAG="$(git rev-parse --short=12 HEAD)"
+	cp .env .env.previous
+	set_env REGISTRY ccapac
+	set_env IMAGE_TAG "${TAG}"
+	set_env FRONTEND_IMAGE_TAG "${TAG}"
+elif [ -f .env.next ]; then
 	[ -f .env ] && cp .env .env.previous
 	mv .env.next .env
 fi
@@ -45,8 +61,13 @@ rollback() {
 }
 trap rollback ERR
 
-log "pull des images"
-"${COMPOSE[@]}" --profile tools pull --quiet
+if [ "${MODE}" = build ]; then
+	log "build des images sur le serveur (plusieurs minutes pour le frontend)"
+	"${COMPOSE[@]}" --profile tools build
+else
+	log "pull des images"
+	"${COMPOSE[@]}" --profile tools pull --quiet
+fi
 
 log "démarrage des services de données"
 "${COMPOSE[@]}" up -d --wait --wait-timeout 120 postgres redis node-db

@@ -5,20 +5,18 @@
 VPS cible : **srv1976360 — 76.13.2.39 / 2a02:4780:41:762b::1** (Ubuntu 26.04, 2 vCPU, 8 Go),
 partagé avec **MOSELINE Pay** servi par **Caddy** (service hôte, ports 80/443).
 
-| | Staging (beta) | Production |
-|---|---|---|
-| Serveur | srv1976360 | srv1976360 |
-| Dossier | `/opt/ccapac/staging` | `/opt/ccapac/production` |
-| Projet compose | `ccapac-staging` | `ccapac-production` |
-| Nginx (boucle locale) | `127.0.0.1:8081` | `127.0.0.1:8080` |
-| Domaines (exemple) | `beta.centreculturel.cd`, `api-beta.…`, `app-api-beta.…` | `centreculturel.cd`, `api.…`, `app-api.…` |
-| Déclenchement | auto après la CI sur `main` | après **validation manuelle** du staging |
+Un seul environnement : **production** (pas de staging), dans `/opt/ccapac/production`,
+projet compose `ccapac-production`, Nginx sur `127.0.0.1:8080`.
+
+| Phase | Domaines |
+|---|---|
+| 1. Validation sur IP | `76-13-2-39.sslip.io`, `api.76-13-2-39.sslip.io`, `app-api.76-13-2-39.sslip.io` (résolution automatique vers l'IP, HTTPS réel via Caddy, aucun DNS à configurer) |
+| 2. Mise en service | domaines définitifs (`centreculturel.cd`, …) : changer le `.env`, redéployer, relancer `caddy-site.sh` |
 
 ### Mode « derrière Caddy » (ce VPS)
 
 ```
 Internet ─443─► Caddy (hôte, TLS auto) ─┬─► 127.0.0.1:5085  MOSELINE Pay (inchangé)
-                                        ├─► 127.0.0.1:8081  nginx ccapac-staging
                                         └─► 127.0.0.1:8080  nginx ccapac-production
 ```
 
@@ -27,14 +25,35 @@ Internet ─443─► Caddy (hôte, TLS auto) ─┬─► 127.0.0.1:5085  MOSEL
   restauration automatique en cas d'erreur). Le bloc MOSELINE n'est pas modifié.
 - Nginx (`docker-compose.caddy.yml`) n'est publié que sur `127.0.0.1` : filtrage, limites
   de débit, en-têtes et logs restent appliqués ; certbot est désactivé.
-- Dans le `.env` de chaque environnement :
+- Dans le `.env` (écrit par `infra/scripts/init-env.sh`) :
   ```
   COMPOSE_FILE='docker-compose.yml:docker-compose.prod.yml:docker-compose.caddy.yml'
-  EDGE_PORT=8081        # 8080 pour la production
+  EDGE_PORT=8080
   ```
 
 Sur un VPS dédié, laisser `COMPOSE_FILE` / `EDGE_PORT` vides : Nginx publie 80/443 et
 `infra/scripts/init-letsencrypt.sh` obtient les certificats.
+
+## Déploiement manuel (phase actuelle)
+
+Rien ne part sur le serveur lors d'un `git push` : le workflow *Deploy* ne se lance
+que manuellement. Pour l'instant, le déploiement se fait sur le VPS :
+
+```bash
+# Première fois (utilisateur deploy, après server-setup.sh)
+git clone -b architecture/docker https://github.com/rhenardM/ccapac-platform.git /opt/ccapac/production
+cd /opt/ccapac/production
+bash infra/scripts/init-env.sh            # .env + secrets aléatoires, domaines sslip.io
+bash infra/scripts/deploy.sh --build      # build sur le serveur, migrations, health checks
+# puis EN ROOT, une seule fois : brancher Caddy
+bash /opt/ccapac/production/infra/scripts/caddy-site.sh /opt/ccapac/production
+
+# Mises à jour suivantes
+cd /opt/ccapac/production && git pull && bash infra/scripts/deploy.sh --build
+```
+
+`deploy.sh --build` étiquette les images avec le commit : en cas d'échec des health
+checks, il revient automatiquement à la version précédente.
 
 ## 2. Préparation du serveur (une fois)
 
@@ -44,19 +63,19 @@ Sur un VPS dédié, laisser `COMPOSE_FILE` / `EDGE_PORT` vides : Nginx publie 80
    (aujourd'hui active à cause de `50-cloud-init.conf`).
 3. Sur le VPS (root) : `DEPLOY_PUBKEY="$(cat ccapac-ci.pub)" bash infra/scripts/server-setup.sh`.
    Idempotent et adapté au serveur partagé : swap 4 Go, fusion de `daemon.json` (pools d'adresses
-   conservés), utilisateur `deploy`, `/opt/ccapac/{staging,production}`, UFW vérifié (aucune règle
+   conservés), utilisateur `deploy`, `/opt/ccapac/production`, UFW vérifié (aucune règle
    retirée), SSH par clé uniquement, fail2ban. **Tester `ssh deploy@76.13.2.39` avant de fermer la session root.**
 4. hPanel → VPS → Pare-feu : n'autoriser que 22, 80 et 443.
 5. DNS : faire pointer les domaines de l'environnement vers 76.13.2.39 (A) et
    2a02:4780:41:762b::1 (AAAA).
 6. Après le premier déploiement d'un environnement (root) :
-   `bash /opt/ccapac/staging/infra/scripts/caddy-site.sh /opt/ccapac/staging`.
+   `bash /opt/ccapac/production/infra/scripts/caddy-site.sh /opt/ccapac/production`.
 7. Planifier le redémarrage en attente (`*** System restart required ***`) à une heure creuse :
    il coupe aussi MOSELINE Pay quelques instants.
 
 ## 3. Configuration GitHub
 
-**Settings → Environments** : créer `staging` et `production` (avec *Required reviewers* sur `production`).
+**Settings → Environments** : créer `production` (*Required reviewers* optionnel).
 
 Secrets par environnement :
 
@@ -85,7 +104,7 @@ push/PR ──► CI : backend (lint, container, migrations PG, schema, PHPUnit,
                  node-api (syntaxe, npm audit)
                  infra (compose config, build images, nginx -t)
                  sécurité (gitleaks, Trivy)
-merge main ──► images → GHCR (scan Trivy) ──► staging ──► validation ──► production
+Run workflow ──► images → GHCR (scan Trivy) ──► production
                                                 │                        │
                                      deploy.sh : pull → migrations → up --wait
                                                  → health checks → rollback si échec
