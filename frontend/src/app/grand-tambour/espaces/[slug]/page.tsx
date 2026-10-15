@@ -23,7 +23,6 @@ import { getSpaceIcon } from "@/lib/iconUtils";
 import { formatCapacity } from "@/lib/spaceUtils";
 import {
   getSpaceBySlug,
-  getSpaces,
 } from "@/services/spaceService";
 import BackButton from "@/app/components/BackButton";
 
@@ -96,13 +95,10 @@ const SPACE_ID_BY_SLUG: Record<string, number> = {
   "esplanade-secondaire-parking": 12,
 };
 
-export async function generateStaticParams() {
-  const spaces = await getSpaces();
-
-  return spaces.map((space) => ({
-    slug: space.slug,
-  }));
-}
+// Contenu toujours frais (fetch `no-store`) : rendu à chaque requête. Une page
+// pré-générée au build passerait en erreur 500 (« static to dynamic ») dès
+// qu'un contenu est ajouté après le build ou que l'API est injoignable au build.
+export const dynamic = "force-dynamic";
 
 export default async function SpacePage({
   params,

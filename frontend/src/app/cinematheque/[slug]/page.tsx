@@ -20,16 +20,15 @@ import { formatEventDateShort } from "@/lib/dateUtils";
 import { CINEMATHEQUE_API_BASE_URL } from "@/lib/content-api";
 import {
   getFilmBySlug,
-  getFilms,
   getRelatedFilms,
 } from "@/services/cinemathequeService";
 import { SCREENING_STATUS_LABELS, type Film, type Screening } from "@/types/film";
 import BackButton from "@/app/components/BackButton";
 
-export async function generateStaticParams() {
-  const films = await getFilms();
-  return films.map((film) => ({ slug: film.slug }));
-}
+// Contenu toujours frais (fetch `no-store`) : rendu à chaque requête. Une page
+// pré-générée au build passerait en erreur 500 (« static to dynamic ») dès
+// qu'un contenu est ajouté après le build ou que l'API est injoignable au build.
+export const dynamic = "force-dynamic";
 
 interface FilmPageProps {
   params: Promise<{ slug: string }>;

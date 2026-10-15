@@ -7,13 +7,10 @@ import { FaArrowLeft, FaCheckCircle } from "react-icons/fa";
 import { MdBookmark, MdGroup, MdTrendingUp } from "react-icons/md";
 import BackButton from "@/app/components/BackButton";
 
-export async function generateStaticParams() {
-  const programmes = await getProgrammes();
-  return programmes.map((programme) => ({
-    category: programme.categorySlug,
-    slug: programme.slug,
-  }));
-}
+// Contenu toujours frais (fetch `no-store`) : rendu à chaque requête. Une page
+// pré-générée au build passerait en erreur 500 (« static to dynamic ») dès
+// qu'un contenu est ajouté après le build ou que l'API est injoignable au build.
+export const dynamic = "force-dynamic";
 
 export default async function ProgrammePage({
   params,
