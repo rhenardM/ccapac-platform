@@ -124,21 +124,24 @@ Run workflow ──► images → GHCR (scan Trivy) ──► production
 
 ### Symfony : MySQL Hostinger → PostgreSQL
 
-Le schéma PostgreSQL est créé par la migration de base (`backend/migrations/`).
-Les anciennes migrations MySQL sont archivées dans `docs/legacy/backend-migrations-mysql/`.
+Le schéma PostgreSQL est créé par la migration de base (`backend/migrations/`) ; les
+anciennes migrations MySQL sont archivées dans `docs/legacy/backend-migrations-mysql/`.
+Un export phpMyAdmin de la base Hostinger s'importe avec un seul script :
 
 ```bash
-# 1. Déployer (le schéma PG est créé par les migrations), puis arrêter les écritures :
-docker compose -f docker-compose.yml -f docker-compose.prod.yml stop backend worker scheduler
-# 2. Copier les DONNÉES uniquement (pgloader), depuis une machine ayant accès aux deux bases :
-pgloader --with "data only" --with "truncate" --with "disable triggers" \
-  mysql://USER:PASS@HOTE_HOSTINGER/dons_grand_tambour \
-  postgresql://ccapac_api:PASS@127.0.0.1:5432/ccapac_api
-# 3. Recaler les séquences d'identité, puis redémarrer.
+# sur le VPS, en deploy, après avoir copié le dump (et les médias) dans ~
+cd /opt/ccapac/production
+bash infra/scripts/import-mysql-dump.sh ~/u852632793_site_db.sql ~/uploads-media
 ```
 
-Les fichiers uploadés (`public/uploads/media` sur Hostinger) sont à copier dans le
-volume `ccapac-<env>_backend_uploads`.
+Le script sauvegarde d'abord `ccapac_api` (`backups-import/`), arrête backend/worker/
+scheduler, charge le dump dans un MariaDB jetable, copie les **données** avec pgloader,
+recale les séquences d'identité, compare le nombre de lignes de chaque table, copie les
+médias dans le volume `backend_uploads`, puis redémarre. Ré-exécutable (les tables sont
+vidées avant import). Les tables `actualite`, `event`, `media` (node-api) sont ignorées.
+
+Les médias sont référencés par nom de fichier : copier le dossier
+`public/uploads/media` de l'ancien backend Hostinger (2e argument du script).
 
 ### Frontend (Prisma)
 

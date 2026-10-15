@@ -60,7 +60,7 @@ jobs:
         run: |
           $SSH "mkdir -p '$DEPLOY_PATH'"
           rsync -az --delete-after \
-            --exclude '.env' --exclude '.env.previous' --exclude '.env.failed' \
+            --exclude '.env' --exclude '.env.previous' --exclude '.env.failed' --exclude 'backups-import' \
             -e "ssh -i $HOME/.ssh/id_deploy" bundle/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_PATH/"
 
       - name: Déploiement (rollback automatique en cas d'échec)
