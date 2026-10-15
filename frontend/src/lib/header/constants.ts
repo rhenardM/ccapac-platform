@@ -67,7 +67,7 @@ export const SOCIAL_LINKS: SocialLink[] = [
     label: "Instagram",
   },
   {
-    href: "www.youtube.com/@CCAPAC-GrandTambour",
+    href: "https://www.youtube.com/@CCAPAC-GrandTambour",
     icon: FaYoutube,
     label: "YouTube",
   },
