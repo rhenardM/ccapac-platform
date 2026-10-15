@@ -2,26 +2,57 @@
 
 ## 1. Environnements
 
-| | Staging | Production |
+VPS cible : **srv1976360 — 76.13.2.39 / 2a02:4780:41:762b::1** (Ubuntu 26.04, 2 vCPU, 8 Go),
+partagé avec **MOSELINE Pay** servi par **Caddy** (service hôte, ports 80/443).
+
+| | Staging (beta) | Production |
 |---|---|---|
-| Serveur | VPS dédié (recommandé) | VPS dédié |
+| Serveur | srv1976360 | srv1976360 |
 | Dossier | `/opt/ccapac/staging` | `/opt/ccapac/production` |
 | Projet compose | `ccapac-staging` | `ccapac-production` |
-| Domaines (exemple) | `staging.centreculturel.cd`, `api-staging.…`, `app-api-staging.…` | `centreculturel.cd`, `api.…`, `app-api.…` |
+| Nginx (boucle locale) | `127.0.0.1:8081` | `127.0.0.1:8080` |
+| Domaines (exemple) | `beta.centreculturel.cd`, `api-beta.…`, `app-api-beta.…` | `centreculturel.cd`, `api.…`, `app-api.…` |
 | Déclenchement | auto après la CI sur `main` | après **validation manuelle** du staging |
 
-> Les deux environnements ne peuvent pas partager un même VPS tel quel : chacun
-> publie 80/443. Deux VPS (ou un VPS staging plus petit) respectent la séparation
-> stricte voulue par l'architecture de référence.
+### Mode « derrière Caddy » (ce VPS)
 
-## 2. Préparation du serveur (une fois par VPS)
+```
+Internet ─443─► Caddy (hôte, TLS auto) ─┬─► 127.0.0.1:5085  MOSELINE Pay (inchangé)
+                                        ├─► 127.0.0.1:8081  nginx ccapac-staging
+                                        └─► 127.0.0.1:8080  nginx ccapac-production
+```
+
+- Caddy garde 80/443 et les certificats ; on **ajoute** un fichier par environnement
+  dans `/etc/caddy/conf.d/` (script `infra/scripts/caddy-site.sh`, validation avant rechargement,
+  restauration automatique en cas d'erreur). Le bloc MOSELINE n'est pas modifié.
+- Nginx (`docker-compose.caddy.yml`) n'est publié que sur `127.0.0.1` : filtrage, limites
+  de débit, en-têtes et logs restent appliqués ; certbot est désactivé.
+- Dans le `.env` de chaque environnement :
+  ```
+  COMPOSE_FILE='docker-compose.yml:docker-compose.prod.yml:docker-compose.caddy.yml'
+  EDGE_PORT=8081        # 8080 pour la production
+  ```
+
+Sur un VPS dédié, laisser `COMPOSE_FILE` / `EDGE_PORT` vides : Nginx publie 80/443 et
+`infra/scripts/init-letsencrypt.sh` obtient les certificats.
+
+## 2. Préparation du serveur (une fois)
 
 1. Créer une paire de clés pour la CI : `ssh-keygen -t ed25519 -f ccapac-ci -C ci@ccapac`.
-2. Sur le VPS (root) : `DEPLOY_PUBKEY="$(cat ccapac-ci.pub)" bash infra/scripts/server-setup.sh`.
-   Cela installe Docker, crée l'utilisateur `deploy`, durcit SSH, active UFW (22/80/443), fail2ban
-   et les mises à jour automatiques. **Tester la connexion `ssh deploy@VPS` avant de fermer la session root.**
-3. hPanel → VPS → Pare-feu : n'autoriser que 22, 80 et 443.
-4. DNS : faire pointer `SITE_DOMAIN`, `www.SITE_DOMAIN`, `API_DOMAIN` et `NODE_API_DOMAIN` vers l'IP du VPS.
+2. **Avant tout**, vérifier qu'une clé SSH root fonctionne (`/root/.ssh/authorized_keys` non vide
+   et connexion testée) : le script désactive l'authentification par mot de passe
+   (aujourd'hui active à cause de `50-cloud-init.conf`).
+3. Sur le VPS (root) : `DEPLOY_PUBKEY="$(cat ccapac-ci.pub)" bash infra/scripts/server-setup.sh`.
+   Idempotent et adapté au serveur partagé : swap 4 Go, fusion de `daemon.json` (pools d'adresses
+   conservés), utilisateur `deploy`, `/opt/ccapac/{staging,production}`, UFW vérifié (aucune règle
+   retirée), SSH par clé uniquement, fail2ban. **Tester `ssh deploy@76.13.2.39` avant de fermer la session root.**
+4. hPanel → VPS → Pare-feu : n'autoriser que 22, 80 et 443.
+5. DNS : faire pointer les domaines de l'environnement vers 76.13.2.39 (A) et
+   2a02:4780:41:762b::1 (AAAA).
+6. Après le premier déploiement d'un environnement (root) :
+   `bash /opt/ccapac/staging/infra/scripts/caddy-site.sh /opt/ccapac/staging`.
+7. Planifier le redémarrage en attente (`*** System restart required ***`) à une heure creuse :
+   il coupe aussi MOSELINE Pay quelques instants.
 
 ## 3. Configuration GitHub
 
@@ -62,12 +93,13 @@ merge main ──► images → GHCR (scan Trivy) ──► staging ──► va
 
 ## 5. Premier déploiement d'un environnement
 
-1. Lancer le workflow (merge sur `main` ou *Run workflow*). Nginx démarre avec un
-   certificat auto-signé de secours.
-2. Sur le VPS : `cd /opt/ccapac/<env> && bash infra/scripts/init-letsencrypt.sh`
-   (tester d'abord avec `--staging` si besoin).
-3. Créer le premier administrateur back-office :
-   `docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend php bin/console app:admin:create`.
+1. Lancer le workflow (merge sur `main` ou *Run workflow*).
+2. TLS :
+   - **mode Caddy (srv1976360)** : en root, `bash /opt/ccapac/<env>/infra/scripts/caddy-site.sh /opt/ccapac/<env>`
+     (Caddy obtient les certificats dès que le DNS pointe vers le VPS) ;
+   - VPS dédié : `cd /opt/ccapac/<env> && bash infra/scripts/init-letsencrypt.sh`.
+3. Créer le premier administrateur back-office (dans `/opt/ccapac/<env>`, le `.env` fournit `COMPOSE_FILE`) :
+   `docker compose exec backend php bin/console app:admin:create`.
 
 ## 6. Migration des données existantes
 
@@ -115,7 +147,7 @@ Base MySQL conservée telle quelle (service `node-db`) : `mysqldump` de la base 
 ## 8. Exploitation courante
 
 ```bash
-C="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+C="docker compose"   # COMPOSE_FILE est lu depuis le .env de l'environnement
 $C ps                                   # état + santé
 $C logs -f --tail=100 nginx backend     # logs
 $C exec backend php bin/console messenger:failed:show   # e-mails en échec

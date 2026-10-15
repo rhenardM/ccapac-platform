@@ -2,6 +2,7 @@
 # Obtention initiale du certificat Let's Encrypt (une fois par environnement,
 # après que les DNS pointent vers le VPS). Le renouvellement est ensuite
 # automatique (conteneur certbot + rechargement Nginx toutes les 6 h).
+# Inutile en mode « derrière Caddy » (docker-compose.caddy.yml) : Caddy gère le TLS.
 #   infra/scripts/init-letsencrypt.sh            # certificat réel
 #   infra/scripts/init-letsencrypt.sh --staging  # test (CA de test Let's Encrypt)
 set -euo pipefail

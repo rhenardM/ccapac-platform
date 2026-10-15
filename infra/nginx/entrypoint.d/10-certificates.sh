@@ -5,6 +5,11 @@
 #    démarre (premier déploiement, développement local).
 set -eu
 
+# Mode « derrière un reverse proxy hôte » (Caddy) : pas de TLS dans Nginx.
+case "${NGINX_ENVSUBST_TEMPLATE_DIR:-}" in
+	*behind-proxy*) echo "[certs] mode derrière proxy : TLS géré en amont"; exit 0 ;;
+esac
+
 LE_DIR="/etc/letsencrypt/live/${SITE_DOMAIN}"
 FALLBACK_DIR="/etc/nginx/certs/selfsigned"
 CURRENT="/etc/nginx/certs/current"

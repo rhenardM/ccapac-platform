@@ -117,14 +117,27 @@ jobs:
           touch infra/secrets/makuta_private.pem infra/secrets/rclone.conf
           docker compose config -q
           docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
+          EDGE_PORT=8081 docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.caddy.yml config -q
       - name: Build des images (hors frontend, construit dans deploy)
         run: docker compose build backend node-api nginx backup
-      - name: Test de la configuration Nginx
+      - name: Test de la configuration Nginx (TLS direct + derrière Caddy)
         run: |
-          docker run --rm \
-            -e SITE_DOMAIN=example.test -e API_DOMAIN=api.example.test -e NODE_API_DOMAIN=app-api.example.test \
-            --add-host frontend:127.0.0.1 --add-host backend:127.0.0.1 --add-host node-api:127.0.0.1 \
-            ccapac/nginx:local nginx -t
+          for dir in /etc/nginx/templates /etc/nginx/templates-behind-proxy; do
+            docker run --rm \
+              -e SITE_DOMAIN=example.test -e API_DOMAIN=api.example.test -e NODE_API_DOMAIN=app-api.example.test \
+              -e NGINX_ENVSUBST_TEMPLATE_DIR=$dir \
+              --add-host frontend:127.0.0.1 --add-host backend:127.0.0.1 --add-host node-api:127.0.0.1 \
+              ccapac/nginx:local nginx -t
+          done
+      - name: Validation du bloc Caddy
+        run: |
+          mkdir -p /tmp/caddy/conf.d
+          printf 'import /etc/caddy/conf.d/*.caddy\n' > /tmp/caddy/Caddyfile
+          ENVIRONMENT=ci EDGE_PORT=8081 CADDY_HOSTS="example.test, api.example.test" \
+            envsubst '${ENVIRONMENT} ${EDGE_PORT} ${CADDY_HOSTS}' \
+            < infra/caddy/ccapac.caddy.template > /tmp/caddy/conf.d/ccapac-ci.caddy
+          docker run --rm -v /tmp/caddy:/etc/caddy caddy:2-alpine \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
   # ---------------------------------------------------------------------------
   security:

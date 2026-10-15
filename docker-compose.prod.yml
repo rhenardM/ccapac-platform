@@ -1,5 +1,7 @@
 # Surcharge staging / production : images issues de la CI (GHCR), jamais
 # construites sur le serveur, limites de ressources, redémarrage systématique.
+# Limites calibrées pour un VPS 2 vCPU / 8 Go partagé (staging + production +
+# autres applications) : ce sont des plafonds, pas des réservations.
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 x-prod: &prod
@@ -8,17 +10,17 @@ x-prod: &prod
 
 services:
   nginx:      { <<: *prod, deploy: { resources: { limits: { cpus: "1.0", memory: 256M } } } }
-  frontend:   { <<: *prod, deploy: { resources: { limits: { cpus: "1.5", memory: 1G } } } }
-  backend:    { <<: *prod, deploy: { resources: { limits: { cpus: "1.5", memory: 768M } } } }
-  worker:     { <<: *prod, deploy: { resources: { limits: { cpus: "0.5", memory: 384M } } } }
-  scheduler:  { <<: *prod, deploy: { resources: { limits: { cpus: "0.5", memory: 384M } } } }
-  node-api:   { <<: *prod, deploy: { resources: { limits: { cpus: "1.0", memory: 512M } } } }
+  frontend:   { <<: *prod, deploy: { resources: { limits: { cpus: "1.0", memory: 768M } } } }
+  backend:    { <<: *prod, deploy: { resources: { limits: { cpus: "1.0", memory: 512M } } } }
+  worker:     { <<: *prod, deploy: { resources: { limits: { cpus: "0.5", memory: 256M } } } }
+  scheduler:  { <<: *prod, deploy: { resources: { limits: { cpus: "0.5", memory: 256M } } } }
+  node-api:   { <<: *prod, deploy: { resources: { limits: { cpus: "1.0", memory: 384M } } } }
   backup:     { <<: *prod, deploy: { resources: { limits: { cpus: "0.5", memory: 512M } } } }
   frontend-migrate: { pull_policy: missing }
 
   postgres:
     restart: always
-    deploy: { resources: { limits: { cpus: "2.0", memory: 2G } } }
+    deploy: { resources: { limits: { cpus: "1.0", memory: 1G } } }
   redis:
     restart: always
     command:
@@ -28,10 +30,12 @@ services:
       - --appendonly
       - "yes"
       - --maxmemory
-      - 512mb
+      - 256mb
       - --maxmemory-policy
       - noeviction
-    deploy: { resources: { limits: { cpus: "0.5", memory: 640M } } }
+    deploy: { resources: { limits: { cpus: "0.5", memory: 384M } } }
   node-db:
     restart: always
-    deploy: { resources: { limits: { cpus: "1.0", memory: 1G } } }
+    # MySQL 8 réserve beaucoup par défaut : buffer pool réduit.
+    command: ["--innodb-buffer-pool-size=256M", "--performance-schema=OFF"]
+    deploy: { resources: { limits: { cpus: "1.0", memory: 768M } } }

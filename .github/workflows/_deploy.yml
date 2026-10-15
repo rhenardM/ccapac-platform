@@ -44,8 +44,8 @@ jobs:
           RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
         run: |
           mkdir -p bundle/infra/secrets
-          cp docker-compose.yml docker-compose.prod.yml bundle/
-          cp -r infra/nginx infra/postgres infra/backup infra/scripts bundle/infra/
+          cp docker-compose.yml docker-compose.prod.yml docker-compose.caddy.yml bundle/
+          cp -r infra/nginx infra/postgres infra/backup infra/scripts infra/caddy bundle/infra/
           {
             printf '%s\n' "$DOTENV"
             echo "COMPOSE_PROJECT_NAME=ccapac-${{ inputs.environment }}"

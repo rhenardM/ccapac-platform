@@ -1,0 +1,18 @@
+# Mode « derrière Caddy » (VPS partagé avec d'autres sites servis par Caddy).
+# Caddy (service hôte) garde 80/443 et le TLS ; Nginx n'est publié que sur la
+# boucle locale, un port par environnement (EDGE_PORT : 8080 prod, 8081 staging).
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml:docker-compose.caddy.yml
+
+services:
+  nginx:
+    ports: !override
+      - "127.0.0.1:${EDGE_PORT:?EDGE_PORT requis en mode Caddy}:80"
+    environment:
+      NGINX_ENVSUBST_TEMPLATE_DIR: /etc/nginx/templates-behind-proxy
+      EDGE_PORT: ${EDGE_PORT}
+    volumes: !reset []
+
+  # Les certificats sont gérés par Caddy.
+  certbot:
+    profiles: [disabled]

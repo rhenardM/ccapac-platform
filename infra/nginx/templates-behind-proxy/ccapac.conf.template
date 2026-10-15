@@ -1,0 +1,47 @@
+# Mode « derrière un reverse proxy hôte » (Caddy sur le VPS) :
+# Caddy termine le TLS sur 80/443 et transmet à Nginx en HTTP sur
+# 127.0.0.1:${EDGE_PORT} (port publié uniquement sur la boucle locale).
+# Nginx garde le filtrage, les limites de débit, les en-têtes et les logs.
+
+include /etc/nginx/snippets/upstreams.conf;
+
+# IP réelle du client : uniquement si la requête vient du proxy hôte
+# (passerelle du réseau Docker), jamais d'un client arbitraire.
+set_real_ip_from 172.16.0.0/12;
+set_real_ip_from 192.168.0.0/16;
+set_real_ip_from 10.0.0.0/8;
+real_ip_header X-Forwarded-For;
+real_ip_recursive on;
+
+# --- Hôte inconnu : connexion fermée ---
+server {
+	listen 80 default_server;
+	server_name _;
+
+	location = /nginx-health { access_log off; return 200 "ok\n"; }
+	location / { return 444; }
+}
+
+server {
+	listen 80;
+	server_name www.${SITE_DOMAIN};
+	return 301 https://${SITE_DOMAIN}$request_uri;
+}
+
+server {
+	listen 80;
+	server_name ${SITE_DOMAIN};
+	include /etc/nginx/snippets/site-frontend.conf;
+}
+
+server {
+	listen 80;
+	server_name ${API_DOMAIN};
+	include /etc/nginx/snippets/site-backend.conf;
+}
+
+server {
+	listen 80;
+	server_name ${NODE_API_DOMAIN};
+	include /etc/nginx/snippets/site-node-api.conf;
+}
