@@ -1,11 +1,12 @@
 name: Deploy
 
-# Chaîne : CI → images validées (GHCR) → staging → validation manuelle → production
-# La validation manuelle = « Required reviewers » sur l'environnement GitHub
-# `production` (Settings → Environments → production).
+# Chaîne : CI → images validées (GHCR) → production (pas d'environnement de staging).
+# Déclenchement MANUEL uniquement (Actions → Deploy → Run workflow) tant que le
+# déploiement automatique sur `main` n'est pas validé. Pour l'activer, ajouter :
+#   push:
+#     branches: [main]
+# Validation optionnelle : « Required reviewers » sur l'environnement `production`.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -32,7 +33,7 @@ jobs:
           echo "registry=ghcr.io/${owner}/ccapac-platform" >> "$GITHUB_OUTPUT"
           echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
-  # Images identiques pour staging et production.
+  # Images applicatives (identiques quel que soit le domaine).
   images:
     needs: [ci, meta]
     runs-on: ubuntu-latest
@@ -72,17 +73,13 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
 
-  # Le frontend fige ses URLs publiques (NEXT_PUBLIC_*) au build : une image par environnement.
+  # Le frontend fige ses URLs publiques (NEXT_PUBLIC_*) au build.
   frontend-images:
     needs: [ci, meta]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - env: staging
-            site: ${{ vars.STAGING_SITE_DOMAIN }}
-            api: ${{ vars.STAGING_API_DOMAIN }}
-            node_api: ${{ vars.STAGING_NODE_API_DOMAIN }}
           - env: production
             site: ${{ vars.PRODUCTION_SITE_DOMAIN }}
             api: ${{ vars.PRODUCTION_API_DOMAIN }}
@@ -122,17 +119,8 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
 
-  staging:
-    needs: [meta, images, frontend-images]
-    uses: ./.github/workflows/_deploy.yml
-    with:
-      environment: staging
-      registry: ${{ needs.meta.outputs.registry }}
-      tag: ${{ needs.meta.outputs.tag }}
-    secrets: inherit
-
   production:
-    needs: [meta, staging]
+    needs: [meta, images, frontend-images]
     uses: ./.github/workflows/_deploy.yml
     with:
       environment: production

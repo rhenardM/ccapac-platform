@@ -7,7 +7,7 @@
 #   DEPLOY_PUBKEY="ssh-ed25519 AAAA... ci@ccapac" bash server-setup.sh
 #
 # Étapes :
-#   1. swap (4 Go)            5. dossiers /opt/ccapac/{staging,production}
+#   1. swap (4 Go)            5. dossier /opt/ccapac/production
 #   2. paquets (jq, fail2ban) 6. UFW : vérifie 22/80/443 (n'en retire aucun)
 #   3. Docker : fusion de daemon.json (garde les pools d'adresses existants)
 #   4. utilisateur `deploy`   7. SSH : mot de passe désactivé SI une clé root existe
@@ -66,8 +66,8 @@ passwd -l deploy >/dev/null 2>&1 || true
 log "utilisateur deploy prêt"
 
 # --- 5. Dossiers des environnements ---
-install -d -m 750 -o deploy -g deploy /opt/ccapac /opt/ccapac/staging /opt/ccapac/production
-log "dossiers /opt/ccapac/{staging,production} prêts"
+install -d -m 750 -o deploy -g deploy /opt/ccapac /opt/ccapac/production
+log "dossier /opt/ccapac/production prêt"
 
 # --- 6. UFW : on vérifie, on n'enlève rien (règles MOSELINE conservées) ---
 if ufw status | grep -q "Status: active"; then
