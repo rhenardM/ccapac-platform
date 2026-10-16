@@ -13,6 +13,10 @@ doctrine:
         identity_generation_preferences:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
+        dql:
+            string_functions:
+                # Date → texte ISO, portable MySQL/PostgreSQL (voir App\Doctrine\Query\ToText).
+                TO_TEXT: App\Doctrine\Query\ToText
         mappings:
             App:
                 type: attribute

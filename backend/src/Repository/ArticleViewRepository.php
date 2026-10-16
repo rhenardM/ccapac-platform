@@ -45,7 +45,7 @@ class ArticleViewRepository extends ServiceEntityRepository
         $since = new \DateTimeImmutable(sprintf('-%d days', $days - 1));
 
         $rows = $this->createQueryBuilder('v')
-            ->select("SUBSTRING(v.viewedAt, 1, 10) AS day, COUNT(v.id) AS cnt")
+            ->select("SUBSTRING(TO_TEXT(v.viewedAt), 1, 10) AS day, COUNT(v.id) AS cnt")
             ->where('v.viewedAt >= :since')
             ->setParameter('since', $since->setTime(0, 0))
             ->groupBy('day')

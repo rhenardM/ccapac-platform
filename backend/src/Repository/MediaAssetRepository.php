@@ -54,8 +54,9 @@ class MediaAssetRepository extends ServiceEntityRepository
             $qb->andWhere('c.slug IN (:cats)')->setParameter('cats', $categorySlugs);
         }
         if ($search) {
-            $qb->andWhere('m.name LIKE :q OR m.caption LIKE :q OR m.alt LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
+            // LOWER() des deux côtés : LIKE est sensible à la casse sous PostgreSQL.
+            $qb->andWhere('LOWER(m.name) LIKE :q OR LOWER(m.caption) LIKE :q OR LOWER(m.alt) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($search) . '%');
         }
         if ($year) {
             // Comparaison par intervalle : exploitable par un index, contrairement
@@ -65,9 +66,8 @@ class MediaAssetRepository extends ServiceEntityRepository
                 ->setParameter('yearEnd', new \DateTimeImmutable(sprintf('%04d-12-31', $year)));
         }
         if ($month) {
-            // Même approche que ArticleViewRepository::dailyCounts() : SUBSTRING
-            // est du DQL standard, contrairement à MONTH().
-            $qb->andWhere('SUBSTRING(m.eventDate, 6, 2) = :month')
+            // MONTH() n'est pas du DQL : extraction texte portable (TO_TEXT).
+            $qb->andWhere('SUBSTRING(TO_TEXT(m.eventDate), 6, 2) = :month')
                 ->setParameter('month', sprintf('%02d', $month));
         }
 
@@ -75,7 +75,10 @@ class MediaAssetRepository extends ServiceEntityRepository
 
         $items = $qb
             ->addSelect('c')
-            ->orderBy('m.eventDate', 'DESC')
+            // Dates vides en dernier (comportement MySQL ; PostgreSQL les place en tête en DESC).
+            ->addSelect('CASE WHEN m.eventDate IS NULL THEN 1 ELSE 0 END AS HIDDEN nullsLast')
+            ->orderBy('nullsLast', 'ASC')
+            ->addOrderBy('m.eventDate', 'DESC')
             ->addOrderBy('m.createdAt', 'DESC')
             ->addOrderBy('m.id', 'DESC')
             ->setFirstResult(($page - 1) * $perPage)
@@ -102,7 +105,7 @@ class MediaAssetRepository extends ServiceEntityRepository
     public function findEventYears(): array
     {
         $rows = $this->createQueryBuilder('m')
-            ->select('DISTINCT SUBSTRING(m.eventDate, 1, 4) AS y')
+            ->select('DISTINCT SUBSTRING(TO_TEXT(m.eventDate), 1, 4) AS y')
             ->where('m.eventDate IS NOT NULL')
             ->andWhere('m.mime LIKE :image')
             ->setParameter('image', 'image/%')

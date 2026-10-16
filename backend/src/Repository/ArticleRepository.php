@@ -29,7 +29,10 @@ class ArticleRepository extends ServiceEntityRepository
             ->addSelect('c')
             ->where('a.status = :pub')
             ->setParameter('pub', ContentStatus::PUBLISHED)
-            ->orderBy('a.publishedAt', 'DESC')
+            // Dates vides en dernier (comportement MySQL ; PostgreSQL les place en tête en DESC).
+            ->addSelect('CASE WHEN a.publishedAt IS NULL THEN 1 ELSE 0 END AS HIDDEN nullsLast')
+            ->orderBy('nullsLast', 'ASC')
+            ->addOrderBy('a.publishedAt', 'DESC')
             ->addOrderBy('a.createdAt', 'DESC');
 
         if ($categorySlug !== null) {

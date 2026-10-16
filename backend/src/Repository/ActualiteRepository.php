@@ -37,7 +37,11 @@ class ActualiteRepository extends ServiceEntityRepository
 
         $count = (clone $qb)->select('COUNT(a.id)')->getQuery()->getSingleScalarResult();
 
-        $items = $qb->orderBy('a.publishedAt', 'DESC')
+        $items = $qb
+            // Dates vides en dernier (comportement MySQL ; PostgreSQL les place en tête en DESC).
+            ->addSelect('CASE WHEN a.publishedAt IS NULL THEN 1 ELSE 0 END AS HIDDEN nullsLast')
+            ->orderBy('nullsLast', 'ASC')
+            ->addOrderBy('a.publishedAt', 'DESC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage)
             ->getQuery()
