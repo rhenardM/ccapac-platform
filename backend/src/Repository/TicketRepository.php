@@ -61,7 +61,7 @@ class TicketRepository extends ServiceEntityRepository
         $since = new \DateTimeImmutable(sprintf('-%d days', $days - 1));
 
         $rows = $this->createQueryBuilder('t')
-            ->select('SUBSTRING(t.generatedAt, 1, 10) AS day, COUNT(t.id) AS cnt')
+            ->select('SUBSTRING(TO_TEXT(t.generatedAt), 1, 10) AS day, COUNT(t.id) AS cnt')
             ->where('t.generatedAt >= :since')
             ->setParameter('since', $since->setTime(0, 0))
             ->groupBy('day')

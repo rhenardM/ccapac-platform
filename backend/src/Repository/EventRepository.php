@@ -33,7 +33,11 @@ class EventRepository extends ServiceEntityRepository
 
         $count = (clone $qb)->select('COUNT(e.id)')->getQuery()->getSingleScalarResult();
 
-        $items = $qb->orderBy('e.startsAt', 'DESC')
+        $items = $qb
+            // Dates vides en dernier (comportement MySQL ; PostgreSQL les place en tête en DESC).
+            ->addSelect('CASE WHEN e.startsAt IS NULL THEN 1 ELSE 0 END AS HIDDEN nullsLast')
+            ->orderBy('nullsLast', 'ASC')
+            ->addOrderBy('e.startsAt', 'DESC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage)
             ->getQuery()

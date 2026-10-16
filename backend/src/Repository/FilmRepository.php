@@ -36,8 +36,9 @@ class FilmRepository extends ServiceEntityRepository
                 ->setParameter('cat', $categorySlug);
         }
         if ($search !== null && $search !== '') {
-            $qb->andWhere('f.title LIKE :search')
-                ->setParameter('search', '%' . $search . '%');
+            // LOWER() des deux côtés : LIKE est sensible à la casse sous PostgreSQL.
+            $qb->andWhere('LOWER(f.title) LIKE :search')
+                ->setParameter('search', '%' . mb_strtolower($search) . '%');
         }
 
         return $qb->getQuery()->getResult();
