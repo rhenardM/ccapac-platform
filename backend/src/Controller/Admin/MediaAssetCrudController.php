@@ -21,12 +21,55 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\DateTimeFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\EntityFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Mime\MimeTypes;
 
 #[IsGranted('ROLE_CONTENT')]
 class MediaAssetCrudController extends AbstractCrudController
 {
-    public function __construct(private AdminUrlGenerator $adminUrlGenerator)
+    public function __construct(
+        private AdminUrlGenerator $adminUrlGenerator,
+        #[Autowire('%kernel.project_dir%/public/uploads/media')]
+        private string $mediaDir,
+    ) {
+    }
+
+    public function persistEntity(EntityManagerInterface $entityManager, $entityInstance): void
     {
+        $this->fillFileMetadata($entityInstance);
+        parent::persistEntity($entityManager, $entityInstance);
+    }
+
+    public function updateEntity(EntityManagerInterface $entityManager, $entityInstance): void
+    {
+        $this->fillFileMetadata($entityInstance);
+        parent::updateEntity($entityManager, $entityInstance);
+    }
+
+    /**
+     * Renseigne le type MIME et la taille du fichier uploadé. Indispensable :
+     * la médiathèque publique ne liste que les médias `image/*`, un média sans
+     * type MIME y était donc invisible alors qu'il apparaissait dans l'admin.
+     */
+    private function fillFileMetadata(mixed $media): void
+    {
+        if (!$media instanceof MediaAsset || !$media->getFilename()) {
+            return;
+        }
+
+        $filename = basename($media->getFilename());
+        $path = $this->mediaDir.'/'.$filename;
+        $mimeTypes = MimeTypes::getDefault();
+
+        $mime = is_file($path) ? $mimeTypes->guessMimeType($path) : null;
+        // Repli sur l'extension si le fichier n'est pas (encore) lisible.
+        $mime ??= $mimeTypes->getMimeTypes(strtolower(pathinfo($filename, \PATHINFO_EXTENSION)))[0] ?? null;
+
+        $media->setMime($mime);
+        if (is_file($path) && false !== ($size = filesize($path))) {
+            $media->setSize($size);
+        }
     }
 
     public static function getEntityFqcn(): string
