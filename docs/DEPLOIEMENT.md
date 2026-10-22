@@ -48,8 +48,8 @@ bash infra/scripts/deploy.sh --build      # build sur le serveur, migrations, he
 # puis EN ROOT, une seule fois : brancher Caddy
 bash /opt/ccapac/production/infra/scripts/caddy-site.sh /opt/ccapac/production
 
-# Mises à jour suivantes
-cd /opt/ccapac/production && git pull && bash infra/scripts/deploy.sh --build
+# Mises à jour suivantes (sans CI/CD)
+cd /opt/ccapac/production && git checkout main && git pull && bash infra/scripts/deploy.sh --build
 ```
 
 `deploy.sh --build` étiquette les images avec le commit : en cas d'échec des health
@@ -73,42 +73,59 @@ checks, il revient automatiquement à la version précédente.
 7. Planifier le redémarrage en attente (`*** System restart required ***`) à une heure creuse :
    il coupe aussi MOSELINE Pay quelques instants.
 
-## 3. Configuration GitHub
+## 3. Configuration GitHub (CI/CD)
 
-**Settings → Environments** : créer `production` (*Required reviewers* optionnel).
+Le serveur est un **clone git** du dépôt et son `.env` (généré par `init-env.sh`)
+reste la **seule source des secrets** : GitHub n'a besoin que d'un accès SSH.
 
-Secrets par environnement :
+**Clé SSH dédiée à la CI** (sur ton poste) :
+```bash
+ssh-keygen -t ed25519 -f ccapac-ci -C ci@ccapac -N ""
+ssh-copy-id -i ccapac-ci.pub deploy@76.13.2.39     # ou ajout dans ~deploy/.ssh/authorized_keys
+ssh-keyscan -H 76.13.2.39 > known_hosts.txt
+```
 
-| Secret | Contenu |
+**Settings → Environments → New environment `production`** (*Required reviewers*
+optionnel, pour valider chaque mise en production à la main) :
+
+| Type | Nom | Valeur |
+|---|---|---|
+| Secret | `SSH_HOST` | `76.13.2.39` |
+| Secret | `SSH_USER` | `deploy` |
+| Secret | `SSH_PRIVATE_KEY` | contenu de `ccapac-ci` (clé privée) |
+| Secret | `SSH_KNOWN_HOSTS` | contenu de `known_hosts.txt` |
+| Variable | `DEPLOY_PATH` | `/opt/ccapac/production` |
+| Variable | `SITE_DOMAIN` | `76-13-2-39.sslip.io` (puis le domaine définitif) |
+
+**Settings → Secrets and variables → Actions → Variables** (dépôt, figées dans le
+build du frontend) :
+
+| Variable | Valeur (phase IP) |
 |---|---|
-| `SSH_HOST` / `SSH_USER` | IP du VPS / `deploy` |
-| `SSH_PRIVATE_KEY` | contenu de `ccapac-ci` |
-| `SSH_KNOWN_HOSTS` | sortie de `ssh-keyscan -H <IP>` |
-| `DOTENV` | `.env` complet de l'environnement (modèle : `.env.example`, secrets via `openssl rand -hex 32`) |
-| `MAKUTA_PRIVATE_KEY` | clé privée RSA Makuta (PEM) |
-| `RCLONE_CONF` | config rclone du stockage externe des sauvegardes |
+| `PRODUCTION_SITE_DOMAIN` | `76-13-2-39.sslip.io` |
+| `PRODUCTION_API_DOMAIN` | `api.76-13-2-39.sslip.io` |
+| `PRODUCTION_NODE_API_DOMAIN` | `app-api.76-13-2-39.sslip.io` |
+| `GOOGLE_CLIENT_ID` | identifiant OAuth Google (optionnel) |
+| `PAYMENT_ENABLED` | `false` / `true` (optionnel) |
 
-Variables par environnement : `DEPLOY_PATH`, `SITE_DOMAIN`.
-
-Variables du dépôt (build du frontend) : `STAGING_SITE_DOMAIN`, `STAGING_API_DOMAIN`,
-`STAGING_NODE_API_DOMAIN`, `PRODUCTION_SITE_DOMAIN`, `PRODUCTION_API_DOMAIN`,
-`PRODUCTION_NODE_API_DOMAIN`, `GOOGLE_CLIENT_ID`, `PAYMENT_ENABLED`.
-
-**Settings → Branches** : protéger `main` (PR obligatoire + CI verte).
+**Settings → Branches** : protéger `main` (PR obligatoire + CI verte) recommandé.
 
 ## 4. Chaîne CI/CD
 
 ```
-push/PR ──► CI : backend (lint, container, migrations PG, schema, PHPUnit, composer audit)
-                 frontend (prisma, lint, tsc, build, npm audit)
-                 node-api (syntaxe, npm audit)
-                 infra (compose config, build images, nginx -t)
-                 sécurité (gitleaks, Trivy)
-Run workflow ──► images → GHCR (scan Trivy) ──► production
-                                                │                        │
-                                     deploy.sh : pull → migrations → up --wait
-                                                 → health checks → rollback si échec
+PR / push ──► CI : backend (lint, container, migrations PG, schéma, PHPUnit, composer audit)
+                   frontend (prisma, lint, tsc, build, npm audit)
+                   node-api (syntaxe, npm audit)
+                   infra (compose, build images, nginx -t, caddy validate)
+                   sécurité (gitleaks, Trivy)
+push main ──► CI ──► images → GHCR (scan Trivy CRITICAL bloquant)
+                          ──► SSH : git checkout du commit exact
+                          ──► deploy.sh --images : pull → migrations → up --wait
+                              → health checks → rollback automatique si échec
+                          ──► health check public
 ```
+
+Le déploiement manuel (`git pull && deploy.sh --build`) reste possible à tout moment.
 
 ## 5. Premier déploiement d'un environnement
 
