@@ -147,10 +147,25 @@ Les médias sont référencés par nom de fichier : copier le dossier
 
 Déjà PostgreSQL : `pg_dump` de la base actuelle → `pg_restore` dans `ccapac_members`.
 
-### node-api
+### node-api (MySQL transitoire)
 
-Base MySQL conservée telle quelle (service `node-db`) : `mysqldump` de la base actuelle
-→ import dans `node-db`. Portage PostgreSQL : voir `docs/ARCHITECTURE.md`.
+Le schéma est versionné dans `node-api/database/schema.sql` (18 tables, structure
+seule) et appliqué automatiquement à la création du volume `node_db_data`.
+Les données s'importent depuis l'export table par table (`site_<table>.sql`) :
+
+```bash
+# sur le VPS, en deploy, après avoir copié l'export dans ~
+cd /opt/ccapac/production
+bash infra/scripts/import-node-db.sh ~/architecture_base_de_donnees.zip
+```
+
+Le script sauvegarde d'abord `ccapac_node` (`backups-import/`), arrête le node-api,
+importe uniquement les tables du schéma (ignore `manifest`, `sessions`,
+`*_backup_*`), recrée les tables manquantes, affiche le nombre de lignes par table,
+rétablit les droits de l'utilisateur applicatif puis redémarre le node-api.
+Ré-exécutable. Les mots de passe (hachés bcrypt) sont conservés tels quels.
+
+Portage PostgreSQL : voir `docs/ARCHITECTURE.md`.
 
 ## 7. Sauvegardes
 

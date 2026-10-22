@@ -299,6 +299,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${NODE_DB_ROOT_PASSWORD:?}
     volumes:
       - node_db_data:/var/lib/mysql
+      # Schéma versionné du node-api, appliqué à la création du volume.
+      - ./node-api/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uccapac_node -p$$MYSQL_PASSWORD --silent"]
       interval: 10s
