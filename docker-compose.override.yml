@@ -21,25 +21,38 @@ services:
       SMTP_PORT: "1025"
       SMTP_SECURE: "false"
       NODE_TLS_REJECT_UNAUTHORIZED: "0" # certificat auto-signé en local uniquement
+    # Rendu côté serveur : dans le conteneur, *.localhost désigne le conteneur
+    # lui-même. On renvoie les domaines des API vers l'hôte, où Nginx écoute en 443.
+    extra_hosts:
+      - "api.localhost:host-gateway"
+      - "app-api.localhost:host-gateway"
   node-api:
     environment:
       NODE_ENV: development
 
   # Accès aux bases depuis le poste (127.0.0.1 uniquement, jamais en prod).
+  # Docker ne publie aucun port d'un conteneur relié seulement à un réseau
+  # `internal` : le réseau `devtools` (local uniquement) le permet.
   postgres:
     ports: ["127.0.0.1:${DEV_POSTGRES_PORT:-15432}:5432"]
+    networks: [backend, devtools]
   redis:
     ports: ["127.0.0.1:${DEV_REDIS_PORT:-16379}:6379"]
+    networks: [backend, devtools]
   node-db:
     ports: ["127.0.0.1:${DEV_MYSQL_PORT:-13306}:3306"]
+    networks: [backend, devtools]
 
   mailpit:
     image: axllent/mailpit:v1.21
     ports: ["127.0.0.1:${DEV_MAILPIT_PORT:-8025}:8025"]
-    networks: [backend]
+    networks: [backend, devtools]
 
   # Pas de certbot ni de sauvegarde en local.
   certbot:
     profiles: [disabled]
   backup:
     profiles: [disabled]
+
+networks:
+  devtools:
