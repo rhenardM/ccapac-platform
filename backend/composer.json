@@ -15,7 +15,7 @@
         "endroid/qr-code": "*",
         "nelmio/api-doc-bundle": "^5.10",
         "nelmio/cors-bundle": "^2.6.1",
-        "phpseclib/phpseclib": "^3.0.57",
+        "phpseclib/phpseclib": "^4.0.2",
         "symfony/asset": "7.4.*",
         "symfony/console": "7.4.*",
         "symfony/dotenv": "7.4.*",
