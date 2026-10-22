@@ -11,7 +11,7 @@
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.7.5",
         "dompdf/dompdf": "*",
-        "easycorp/easyadmin-bundle": "^4.29.16",
+        "easycorp/easyadmin-bundle": "^5.7.0",
         "endroid/qr-code": "*",
         "nelmio/api-doc-bundle": "^5.10",
         "nelmio/cors-bundle": "^2.6.1",
