@@ -73,6 +73,9 @@ services:
     environment:
       SITE_DOMAIN: ${SITE_DOMAIN:?}
       API_DOMAIN: ${API_DOMAIN:?}
+      # Autres noms de l'API Symfony, séparés par des espaces (ex. l'ancien
+      # api-fundraising.centreculturel.cd, connu de Makuta pour ses webhooks).
+      API_DOMAIN_ALIASES: ${API_DOMAIN_ALIASES:-}
       NODE_API_DOMAIN: ${NODE_API_DOMAIN:?}
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/conf.d
     tmpfs:

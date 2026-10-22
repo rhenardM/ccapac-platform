@@ -26,6 +26,9 @@ if [ "${CADDY_INCLUDE_WWW:-false}" = "true" ]; then
 	HOSTS="${SITE_DOMAIN}, www.${SITE_DOMAIN}, ${API_DOMAIN}, ${NODE_API_DOMAIN}"
 fi
 
+# Autres noms de l'API (API_DOMAIN_ALIASES, séparés par des espaces).
+for alias in ${API_DOMAIN_ALIASES:-}; do HOSTS="${HOSTS}, ${alias}"; done
+
 mkdir -p "${CONF_DIR}" /var/log/caddy
 chown caddy:caddy /var/log/caddy 2>/dev/null || true
 cp "${CADDYFILE}" "${CADDYFILE}.bak-${STAMP}"

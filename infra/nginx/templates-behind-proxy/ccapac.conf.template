@@ -36,7 +36,7 @@ server {
 
 server {
 	listen 80;
-	server_name ${API_DOMAIN};
+	server_name ${API_DOMAIN} ${API_DOMAIN_ALIASES};
 	include /etc/nginx/snippets/site-backend.conf;
 }
 
