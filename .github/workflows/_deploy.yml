@@ -1,12 +1,15 @@
 name: _deploy (réutilisable)
 
-# Déploie une version sur un environnement GitHub (staging | production).
-# Secrets de l'environnement :
-#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS
-#   DOTENV              → contenu complet du .env (voir .env.example)
-#   MAKUTA_PRIVATE_KEY  → clé privée RSA Makuta (PEM)
-#   RCLONE_CONF         → configuration rclone des sauvegardes hors serveur
-# Variables de l'environnement : DEPLOY_PATH (ex. /opt/ccapac/production), SITE_DOMAIN
+# Déploie un commit sur le serveur, qui est un clone git du dépôt :
+#   1. git fetch + checkout du commit exact (compose, Nginx, scripts à jour)
+#   2. deploy.sh --images : pull des images GHCR construites et scannées par la CI,
+#      migrations, health checks, rollback automatique en cas d'échec
+#
+# Le .env du serveur reste la source de vérité des secrets (rien n'est écrasé).
+#
+# Environnement GitHub `production` :
+#   secrets   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS
+#   variables DEPLOY_PATH (ex. /opt/ccapac/production), SITE_DOMAIN
 
 on:
   workflow_call:
@@ -27,50 +30,52 @@ jobs:
       url: https://${{ vars.SITE_DOMAIN }}
     env:
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+      SHA: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Configuration présente
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          missing=""
+          [ -n "$SSH_HOST" ] || missing="$missing SSH_HOST"
+          [ -n "$SSH_USER" ] || missing="$missing SSH_USER"
+          [ -n "$SSH_PRIVATE_KEY" ] || missing="$missing SSH_PRIVATE_KEY"
+          [ -n "$SSH_KNOWN_HOSTS" ] || missing="$missing SSH_KNOWN_HOSTS"
+          [ -n "$DEPLOY_PATH" ] || missing="$missing DEPLOY_PATH(variable)"
+          [ -n "$SITE_DOMAIN" ] || missing="$missing SITE_DOMAIN(variable)"
+          if [ -n "$missing" ]; then
+            echo "::error::Manquant dans l'environnement ${{ inputs.environment }} :$missing"
+            exit 1
+          fi
 
       - name: Clé SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          echo "SSH=ssh -i $HOME/.ssh/id_deploy ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" >> "$GITHUB_ENV"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          echo "SSH=ssh -i $HOME/.ssh/id_deploy -o BatchMode=yes ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" >> "$GITHUB_ENV"
 
-      - name: Préparation de la configuration
-        env:
-          DOTENV: ${{ secrets.DOTENV }}
-          MAKUTA_PRIVATE_KEY: ${{ secrets.MAKUTA_PRIVATE_KEY }}
-          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+      - name: Code du serveur sur le commit déployé
         run: |
-          mkdir -p bundle/infra/secrets
-          cp docker-compose.yml docker-compose.prod.yml docker-compose.caddy.yml bundle/
-          cp -r infra/nginx infra/postgres infra/backup infra/scripts infra/caddy infra/migration bundle/infra/
-          mkdir -p bundle/node-api && cp -r node-api/database bundle/node-api/
-          {
-            printf '%s\n' "$DOTENV"
-            echo "COMPOSE_PROJECT_NAME=ccapac-${{ inputs.environment }}"
-            echo "REGISTRY=${{ inputs.registry }}"
-            echo "IMAGE_TAG=${{ inputs.tag }}"
-            echo "FRONTEND_IMAGE_TAG=${{ inputs.tag }}-${{ inputs.environment }}"
-          } > bundle/.env.next
-          printf '%s\n' "$MAKUTA_PRIVATE_KEY" > bundle/infra/secrets/makuta_private.pem
-          printf '%s\n' "$RCLONE_CONF" > bundle/infra/secrets/rclone.conf
-
-      - name: Envoi sur le serveur
-        run: |
-          $SSH "mkdir -p '$DEPLOY_PATH'"
-          rsync -az --delete-after \
-            --exclude '.env' --exclude '.env.previous' --exclude '.env.failed' --exclude 'backups-import' \
-            -e "ssh -i $HOME/.ssh/id_deploy" bundle/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_PATH/"
+          $SSH "set -e; cd '$DEPLOY_PATH'
+            git fetch --quiet origin
+            git checkout --quiet --detach '$SHA'
+            echo \"serveur sur : \$(git log --oneline -1)\""
 
       - name: Déploiement (rollback automatique en cas d'échec)
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $SSH "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin \
-            && bash '$DEPLOY_PATH/infra/scripts/deploy.sh'; status=\$?; docker logout ghcr.io >/dev/null; exit \$status"
+          $SSH "echo '$TOKEN' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin >/dev/null \
+            && bash '$DEPLOY_PATH/infra/scripts/deploy.sh' --images '${{ inputs.registry }}' '${{ inputs.tag }}'; \
+            status=\$?; docker logout ghcr.io >/dev/null; exit \$status"
 
       - name: Health check public
-        run: |
-          for url in "https://${{ vars.SITE_DOMAIN }}/api/health"; do
-            curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "$url"
-          done
+        run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "https://$SITE_DOMAIN/api/health"

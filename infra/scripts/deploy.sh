@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Déploiement d'une version sur le serveur.
 #
-#   bash infra/scripts/deploy.sh           # CI/CD : images GHCR, config déposée dans .env.next
-#   bash infra/scripts/deploy.sh --build   # manuel : après `git pull`, images construites
-#                                          # sur le serveur, étiquetées avec le commit
+#   bash infra/scripts/deploy.sh --build                  # manuel : après `git pull`, images
+#                                                         # construites sur le serveur
+#   bash infra/scripts/deploy.sh --images <registre> <tag>  # CI/CD : images construites et
+#                                                         # scannées par GitHub Actions (GHCR)
+#
+# Le .env du serveur reste la source de vérité des secrets : seules les lignes
+# REGISTRY / IMAGE_TAG / FRONTEND_IMAGE_TAG sont mises à jour.
 #
 #   1. sauvegarde de la configuration courante (.env → .env.previous)
 #   2. pull (ou build) des images, démarrage des données, migrations
@@ -13,8 +17,12 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-MODE=pull
-[ "${1:-}" = "--build" ] && MODE=build
+MODE=""
+case "${1:-}" in
+	--build) MODE=build ;;
+	--images) MODE=pull; IMG_REGISTRY="${2:?--images <registre> <tag>}"; IMG_TAG="${3:?--images <registre> <tag>}" ;;
+	*) echo "Usage : deploy.sh --build | --images <registre> <tag>"; exit 1 ;;
+esac
 log() { echo "[deploy] $(date -u +%H:%M:%S) $*"; }
 
 # Fichiers montés par compose : doivent exister (sinon Docker crée un dossier).
@@ -31,16 +39,17 @@ set_env() { # set_env CLE VALEUR : remplace ou ajoute la ligne dans .env
 	fi
 }
 
+[ -f .env ] || { log ".env absent : lancer d'abord infra/scripts/init-env.sh"; exit 1; }
+cp .env .env.previous
 if [ "${MODE}" = build ]; then
-	[ -f .env ] || { log ".env absent : lancer d'abord infra/scripts/init-env.sh"; exit 1; }
 	TAG="$(git rev-parse --short=12 HEAD)"
-	cp .env .env.previous
 	set_env REGISTRY ccapac
 	set_env IMAGE_TAG "${TAG}"
 	set_env FRONTEND_IMAGE_TAG "${TAG}"
-elif [ -f .env.next ]; then
-	[ -f .env ] && cp .env .env.previous
-	mv .env.next .env
+else
+	set_env REGISTRY "${IMG_REGISTRY}"
+	set_env IMAGE_TAG "${IMG_TAG}"
+	set_env FRONTEND_IMAGE_TAG "${IMG_TAG}-production"
 fi
 chmod 600 .env .env.previous 2>/dev/null || true
 
