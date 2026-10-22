@@ -45,7 +45,8 @@ jobs:
         run: |
           mkdir -p bundle/infra/secrets
           cp docker-compose.yml docker-compose.prod.yml docker-compose.caddy.yml bundle/
-          cp -r infra/nginx infra/postgres infra/backup infra/scripts infra/caddy bundle/infra/
+          cp -r infra/nginx infra/postgres infra/backup infra/scripts infra/caddy infra/migration bundle/infra/
+          mkdir -p bundle/node-api && cp -r node-api/database bundle/node-api/
           {
             printf '%s\n' "$DOTENV"
             echo "COMPOSE_PROJECT_NAME=ccapac-${{ inputs.environment }}"

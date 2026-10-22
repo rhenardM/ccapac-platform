@@ -87,9 +87,9 @@ L'état du scheduler est stocké dans Redis (pas de rafale après un redémarrag
 ## Dette connue / prochaines étapes
 
 1. **node-api → PostgreSQL.** ~225 requêtes SQL MySQL brutes (`NOW()`, `DATE_FORMAT`,
-   `insertId`, `GROUP_CONCAT`, `ON DUPLICATE KEY`…) et aucun schéma versionné.
-   Prérequis : `mysqldump --no-data` de la base de production. Ensuite : schéma
-   versionné, portage vers `pg`, suppression de `node-db`.
+   `insertId`, `GROUP_CONCAT`, `ON DUPLICATE KEY`…). Le schéma est désormais versionné
+   (`node-api/database/schema.sql`, 18 tables, 25 clés étrangères) : reste le portage
+   des requêtes vers `pg`, puis la suppression de `node-db`.
 2. **CSP** (Content-Security-Policy) à définir avec les domaines tiers réels
    (Stripe, Google, Cloudinary, tuiles Leaflet, gtag).
 3. **Centralisation des logs** (Loki/Grafana ou équivalent) : les logs sont déjà en
