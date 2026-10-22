@@ -17,3 +17,6 @@ backups-import/
 /*.sql
 /*.sql.gz
 *.dump
+
+# Certificats locaux mkcert
+infra/dev-certs/*.pem
