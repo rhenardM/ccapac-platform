@@ -24,7 +24,7 @@
         "symfony/http-client": "7.4.*",
         "symfony/mailer": "7.4.*",
         "symfony/messenger": "7.4.*",
-        "symfony/monolog-bundle": "^3.11.2",
+        "symfony/monolog-bundle": "^4.1.0",
         "symfony/property-access": "7.4.*",
         "symfony/rate-limiter": "7.4.*",
         "symfony/redis-messenger": "7.4.*",
