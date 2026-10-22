@@ -1799,16 +1799,16 @@
         },
         {
             "name": "nelmio/api-doc-bundle",
-            "version": "v5.10.3",
+            "version": "v5.13.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nelmio/NelmioApiDocBundle.git",
-                "reference": "e6b6d3f4e413f8f9a78b8470a082b9e4ffb49533"
+                "reference": "06cec4887bce89dd184a7d2d7f0f82f829afa76c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nelmio/NelmioApiDocBundle/zipball/e6b6d3f4e413f8f9a78b8470a082b9e4ffb49533",
-                "reference": "e6b6d3f4e413f8f9a78b8470a082b9e4ffb49533",
+                "url": "https://api.github.com/repos/nelmio/NelmioApiDocBundle/zipball/06cec4887bce89dd184a7d2d7f0f82f829afa76c",
+                "reference": "06cec4887bce89dd184a7d2d7f0f82f829afa76c",
                 "shasum": ""
             },
             "require": {
@@ -1826,17 +1826,16 @@
                 "symfony/http-foundation": "^6.4 || ^7.2 || ^8.0",
                 "symfony/http-kernel": "^6.4 || ^7.2 || ^8.0",
                 "symfony/options-resolver": "^6.4 || ^7.2 || ^8.0",
-                "symfony/property-info": "^6.4 || ^7.2 || ^8.0",
+                "symfony/property-info": "^6.4.15 || ^7.2 || ^8.0",
                 "symfony/routing": "^6.4 || ^7.2 || ^8.0",
                 "symfony/type-info": "^7.2 || ^8.0",
-                "zircote/swagger-php": "^4.11.1 || ^5.0 || ^6.0"
+                "zircote/swagger-php": "^5.7.8 || ^6.0"
             },
             "conflict": {
-                "symfony/property-info": "6.4.32 || 7.3.10 || 7.4.4 || 8.0.4",
-                "zircote/swagger-php": "4.8.7 || 5.5.0"
+                "symfony/property-info": "6.4.32 || 7.3.10 || 7.4.4 || 8.0.4"
             },
             "require-dev": {
-                "api-platform/core": "^3.2 || ^4.0",
+                "api-platform/core": "^3.4.6 || ^4.0.9",
                 "doctrine/inflector": "^2.0",
                 "friendsofphp/php-cs-fixer": "^3.52",
                 "friendsofsymfony/rest-bundle": "^3.2.0",
@@ -1910,7 +1909,7 @@
             ],
             "support": {
                 "issues": "https://github.com/nelmio/NelmioApiDocBundle/issues",
-                "source": "https://github.com/nelmio/NelmioApiDocBundle/tree/v5.10.3"
+                "source": "https://github.com/nelmio/NelmioApiDocBundle/tree/v5.13.1"
             },
             "funding": [
                 {
@@ -1918,7 +1917,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-01T07:56:07+00:00"
+            "time": "2026-10-05T08:19:45+00:00"
         },
         {
             "name": "nelmio/cors-bundle",
@@ -1987,20 +1986,19 @@
         },
         {
             "name": "nikic/php-parser",
-            "version": "v5.7.0",
+            "version": "v5.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "dca41cd15c2ac9d055ad70dbfd011130757d1f82"
+                "reference": "9e33da9553fe7786f0962b35f4e4ecf01be89def"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/dca41cd15c2ac9d055ad70dbfd011130757d1f82",
-                "reference": "dca41cd15c2ac9d055ad70dbfd011130757d1f82",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/9e33da9553fe7786f0962b35f4e4ecf01be89def",
+                "reference": "9e33da9553fe7786f0962b35f4e4ecf01be89def",
                 "shasum": ""
             },
             "require": {
-                "ext-ctype": "*",
                 "ext-json": "*",
                 "ext-tokenizer": "*",
                 "php": ">=7.4"
@@ -2039,9 +2037,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
-                "source": "https://github.com/nikic/PHP-Parser/tree/v5.7.0"
+                "source": "https://github.com/nikic/PHP-Parser/tree/v5.9.0"
             },
-            "time": "2025-12-06T11:56:16+00:00"
+            "time": "2026-09-13T18:51:52+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
@@ -2164,20 +2162,25 @@
         },
         {
             "name": "phpdocumentor/reflection-common",
-            "version": "2.2.0",
+            "version": "2.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpDocumentor/ReflectionCommon.git",
-                "reference": "1d01c49d4ed62f25aa84a747ad35d5a16924662b"
+                "reference": "ee15a5a2022c8383906b225055e9496a6a5e6e3b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpDocumentor/ReflectionCommon/zipball/1d01c49d4ed62f25aa84a747ad35d5a16924662b",
-                "reference": "1d01c49d4ed62f25aa84a747ad35d5a16924662b",
+                "url": "https://api.github.com/repos/phpDocumentor/ReflectionCommon/zipball/ee15a5a2022c8383906b225055e9496a6a5e6e3b",
+                "reference": "ee15a5a2022c8383906b225055e9496a6a5e6e3b",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.2 || ^8.0"
+                "php": "^7.4 || ^8.0"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^1.8",
+                "phpunit/phpunit": "^9.5",
+                "vimeo/psalm": "^4.25"
             },
             "type": "library",
             "extra": {
@@ -2201,7 +2204,7 @@
                 }
             ],
             "description": "Common reflection classes used by phpdocumentor to reflect the code structure",
-            "homepage": "http://www.phpdoc.org",
+            "homepage": "https://www.phpdoc.org",
             "keywords": [
                 "FQSEN",
                 "phpDocumentor",
@@ -2211,9 +2214,9 @@
             ],
             "support": {
                 "issues": "https://github.com/phpDocumentor/ReflectionCommon/issues",
-                "source": "https://github.com/phpDocumentor/ReflectionCommon/tree/2.x"
+                "source": "https://github.com/phpDocumentor/ReflectionCommon/tree/2.2.1"
             },
-            "time": "2020-06-27T09:03:43+00:00"
+            "time": "2025-11-10T21:21:55+00:00"
         },
         {
             "name": "phpdocumentor/reflection-docblock",
@@ -2282,16 +2285,16 @@
         },
         {
             "name": "phpdocumentor/type-resolver",
-            "version": "2.0.0",
+            "version": "2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpDocumentor/TypeResolver.git",
-                "reference": "327a05bbee54120d4786a0dc67aad30226ad4cf9"
+                "reference": "dbe2133bb23e2e33a6834f4ed417f24a1b167769"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpDocumentor/TypeResolver/zipball/327a05bbee54120d4786a0dc67aad30226ad4cf9",
-                "reference": "327a05bbee54120d4786a0dc67aad30226ad4cf9",
+                "url": "https://api.github.com/repos/phpDocumentor/TypeResolver/zipball/dbe2133bb23e2e33a6834f4ed417f24a1b167769",
+                "reference": "dbe2133bb23e2e33a6834f4ed417f24a1b167769",
                 "shasum": ""
             },
             "require": {
@@ -2334,9 +2337,9 @@
             "description": "A PSR-5 based resolver of Class names, Types and Structural Element Names",
             "support": {
                 "issues": "https://github.com/phpDocumentor/TypeResolver/issues",
-                "source": "https://github.com/phpDocumentor/TypeResolver/tree/2.0.0"
+                "source": "https://github.com/phpDocumentor/TypeResolver/tree/2.1.0"
             },
-            "time": "2026-01-06T21:53:42+00:00"
+            "time": "2026-09-27T19:32:54+00:00"
         },
         {
             "name": "phpseclib/phpseclib",
@@ -2450,16 +2453,16 @@
         },
         {
             "name": "phpstan/phpdoc-parser",
-            "version": "2.3.2",
+            "version": "2.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpdoc-parser.git",
-                "reference": "a004701b11273a26cd7955a61d67a7f1e525a45a"
+                "reference": "1427af4647235b4a73b13940b1f1258d3584f36e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/a004701b11273a26cd7955a61d67a7f1e525a45a",
-                "reference": "a004701b11273a26cd7955a61d67a7f1e525a45a",
+                "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/1427af4647235b4a73b13940b1f1258d3584f36e",
+                "reference": "1427af4647235b4a73b13940b1f1258d3584f36e",
                 "shasum": ""
             },
             "require": {
@@ -2491,9 +2494,9 @@
             "description": "PHPDoc parser with support for nullable, intersection and generic types",
             "support": {
                 "issues": "https://github.com/phpstan/phpdoc-parser/issues",
-                "source": "https://github.com/phpstan/phpdoc-parser/tree/2.3.2"
+                "source": "https://github.com/phpstan/phpdoc-parser/tree/2.3.6"
             },
-            "time": "2026-01-25T14:56:51+00:00"
+            "time": "2026-09-27T20:07:45+00:00"
         },
         {
             "name": "psr/cache",
@@ -2747,16 +2750,16 @@
         },
         {
             "name": "radebatz/type-info-extras",
-            "version": "1.0.7",
+            "version": "1.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DerManoMann/type-info-extras.git",
-                "reference": "95a524a74a61648b44e355cb33d38db4b17ef5ce"
+                "reference": "1e71149dee7bf45f5cf208eb3c6c74d45a13d395"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DerManoMann/type-info-extras/zipball/95a524a74a61648b44e355cb33d38db4b17ef5ce",
-                "reference": "95a524a74a61648b44e355cb33d38db4b17ef5ce",
+                "url": "https://api.github.com/repos/DerManoMann/type-info-extras/zipball/1e71149dee7bf45f5cf208eb3c6c74d45a13d395",
+                "reference": "1e71149dee7bf45f5cf208eb3c6c74d45a13d395",
                 "shasum": ""
             },
             "require": {
@@ -2803,9 +2806,9 @@
             ],
             "support": {
                 "issues": "https://github.com/DerManoMann/type-info-extras/issues",
-                "source": "https://github.com/DerManoMann/type-info-extras/tree/1.0.7"
+                "source": "https://github.com/DerManoMann/type-info-extras/tree/1.0.10"
             },
-            "time": "2026-03-06T22:40:29+00:00"
+            "time": "2026-10-14T00:51:19+00:00"
         },
         {
             "name": "sabberworm/php-css-parser",
@@ -8549,16 +8552,16 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v7.4.13",
+            "version": "v7.4.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "a7ec3b1156faf8815db7683ec7c1e7338e6f977c"
+                "reference": "044907929c7999814378be22da34722c7a86bad4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/a7ec3b1156faf8815db7683ec7c1e7338e6f977c",
-                "reference": "a7ec3b1156faf8815db7683ec7c1e7338e6f977c",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/044907929c7999814378be22da34722c7a86bad4",
+                "reference": "044907929c7999814378be22da34722c7a86bad4",
                 "shasum": ""
             },
             "require": {
@@ -8601,7 +8604,7 @@
             "description": "Loads and dumps YAML files",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/yaml/tree/v7.4.13"
+                "source": "https://github.com/symfony/yaml/tree/v7.4.21"
             },
             "funding": [
                 {
@@ -8621,7 +8624,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-05-25T06:06:12+00:00"
+            "time": "2026-10-12T12:34:30+00:00"
         },
         {
             "name": "thecodingmachine/safe",
@@ -8990,16 +8993,16 @@
         },
         {
             "name": "webmozart/assert",
-            "version": "2.4.1",
+            "version": "2.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/webmozarts/assert.git",
-                "reference": "2ccb7c2e821038c03a3e6e1700c570c158c55f70"
+                "reference": "8a163706bbcac613733dba03f51e13b5eb1bb819"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/webmozarts/assert/zipball/2ccb7c2e821038c03a3e6e1700c570c158c55f70",
-                "reference": "2ccb7c2e821038c03a3e6e1700c570c158c55f70",
+                "url": "https://api.github.com/repos/webmozarts/assert/zipball/8a163706bbcac613733dba03f51e13b5eb1bb819",
+                "reference": "8a163706bbcac613733dba03f51e13b5eb1bb819",
                 "shasum": ""
             },
             "require": {
@@ -9050,22 +9053,22 @@
             ],
             "support": {
                 "issues": "https://github.com/webmozarts/assert/issues",
-                "source": "https://github.com/webmozarts/assert/tree/2.4.1"
+                "source": "https://github.com/webmozarts/assert/tree/2.5.0"
             },
-            "time": "2026-06-15T15:31:57+00:00"
+            "time": "2026-10-05T23:14:19+00:00"
         },
         {
             "name": "zircote/swagger-php",
-            "version": "6.2.0",
+            "version": "6.18.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zircote/swagger-php.git",
-                "reference": "060af3bb9c4cba6a5859aba2c51cd1c129479410"
+                "reference": "c93b7430193dc461602a2a3f4f6a0791a3a0608a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zircote/swagger-php/zipball/060af3bb9c4cba6a5859aba2c51cd1c129479410",
-                "reference": "060af3bb9c4cba6a5859aba2c51cd1c129479410",
+                "url": "https://api.github.com/repos/zircote/swagger-php/zipball/c93b7430193dc461602a2a3f4f6a0791a3a0608a",
+                "reference": "c93b7430193dc461602a2a3f4f6a0791a3a0608a",
                 "shasum": ""
             },
             "require": {
@@ -9074,7 +9077,7 @@
                 "phpstan/phpdoc-parser": "^2.0",
                 "psr/log": "^1.1 || ^2.0 || ^3.0",
                 "radebatz/type-info-extras": "^1.0.2",
-                "symfony/console": "^7.4 || ^8.0",
+                "symfony/console": "^6.4 || ^7.0 || ^8.0",
                 "symfony/deprecation-contracts": "^2 || ^3",
                 "symfony/finder": "^5.0 || ^6.0 || ^7.0 || ^8.0",
                 "symfony/yaml": "^5.4 || ^6.0 || ^7.0 || ^8.0"
@@ -9083,12 +9086,11 @@
                 "symfony/process": ">=6, <6.4.14"
             },
             "require-dev": {
-                "composer/package-versions-deprecated": "^1.11",
                 "doctrine/annotations": "^2.0",
-                "friendsofphp/php-cs-fixer": "^3.62.0",
-                "phpstan/phpstan": "^2.0",
+                "friendsofphp/php-cs-fixer": "3.95.27",
+                "phpstan/phpstan": "2.3.1",
                 "phpunit/phpunit": "^11.5 || >=12.5.22",
-                "rector/rector": "^2.3.1"
+                "rector/rector": "2.7.0"
             },
             "bin": [
                 "bin/openapi"
@@ -9101,7 +9103,8 @@
             },
             "autoload": {
                 "psr-4": {
-                    "OpenApi\\": "src"
+                    "OpenApi\\": "src",
+                    "OpenApi\\Rector\\": "rector/src"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -9134,7 +9137,7 @@
             ],
             "support": {
                 "issues": "https://github.com/zircote/swagger-php/issues",
-                "source": "https://github.com/zircote/swagger-php/tree/6.2.0"
+                "source": "https://github.com/zircote/swagger-php/tree/6.18.0"
             },
             "funding": [
                 {
@@ -9142,7 +9145,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-14T06:51:56+00:00"
+            "time": "2026-10-20T22:51:12+00:00"
         }
     ],
     "packages-dev": [
