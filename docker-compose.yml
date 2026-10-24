@@ -118,7 +118,7 @@ services:
         NEXT_PUBLIC_SITE_URL: https://${SITE_DOMAIN}
         NEXT_PUBLIC_URL: https://${SITE_DOMAIN}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-        NEXT_PUBLIC_PAYMENT_ENABLED: ${PAYMENT_ENABLED:-false}
+        NEXT_PUBLIC_PAYMENT_ENABLED: ${PAYMENT_ENABLED:-true}
     environment:
       DATABASE_URL: postgresql://ccapac_members:${POSTGRES_MEMBERS_PASSWORD:?}@postgres:5432/ccapac_members?schema=public
       JWT_SECRET: ${JWT_SECRET:?}

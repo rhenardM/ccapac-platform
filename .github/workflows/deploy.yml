@@ -113,7 +113,7 @@ jobs:
             NEXT_PUBLIC_SITE_URL=https://${{ matrix.site }}
             NEXT_PUBLIC_URL=https://${{ matrix.site }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
-            NEXT_PUBLIC_PAYMENT_ENABLED=${{ vars.PAYMENT_ENABLED || 'false' }}
+            NEXT_PUBLIC_PAYMENT_ENABLED=${{ vars.PAYMENT_ENABLED || 'true' }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
           provenance: false
