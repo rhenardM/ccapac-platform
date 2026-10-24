@@ -128,7 +128,9 @@ services:
       # Domaine public (et non http://backend:8080) : Symfony construit les URLs
       # absolues des médias à partir de l'hôte de la requête.
       CONTENT_API_BASE_URL: https://${API_DOMAIN}/api/content
-      FUNDRAISING_API_BASE_URL: https://${API_DOMAIN}/api/fundraising
+      # Surcharge possible (.env) : ex. renvoyer temporairement les dons vers un
+      # autre backend autorisé par Makuta (Makuta filtre par adresse IP serveur).
+      FUNDRAISING_API_BASE_URL: ${FUNDRAISING_API_BASE_URL:-https://${API_DOMAIN}/api/fundraising}
       API_URL: http://node-api:5000/api
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-465}
